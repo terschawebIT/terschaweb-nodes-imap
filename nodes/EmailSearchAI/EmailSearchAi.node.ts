@@ -16,8 +16,8 @@ export class EmailSearchAI implements INodeType {
     defaults: {
       name: 'EmailSearchAI',
     },
-    inputs: ['main'],
-    outputs: ['main'],
+    inputs: [NodeConnectionType.Main],
+    outputs: [NodeConnectionType.Main],
     usableAsTool: true,
     credentials: [
       {
