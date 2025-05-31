@@ -57,7 +57,7 @@
       "dist/nodes/Imap/Imap.node.js",
       "dist/nodes/Imap/ImapTool.node.js",
       "dist/nodes/Imap/ImapToolSimple.node.js",
-      "dist/nodes/Imap/EmailSearchAI.node.js"
+      "dist/nodes/EmailSearchAI/EmailSearchAi.node.js"
     ]
   },
   "devDependencies": {

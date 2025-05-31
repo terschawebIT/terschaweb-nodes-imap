@@ -1,23 +1,23 @@
 import { IExecuteFunctions, INodeExecutionData, INodeType, INodeTypeDescription, NodeConnectionType, ICredentialTestFunctions, INodeCredentialTestResult, ICredentialsDecrypted } from 'n8n-workflow';
 import { ImapCredentialsData } from '../../credentials/ImapCredentials.credentials';
-import { createImapClient } from './utils/ImapUtils';
+import { createImapClient } from '../Imap/utils/ImapUtils';
 import { NodeApiError } from 'n8n-workflow';
-import { CREDENTIALS_TYPE_CORE_IMAP_ACCOUNT, CREDENTIALS_TYPE_THIS_NODE, credentialNames, getImapCredentials } from './utils/CredentialsSelector';
+import { getImapCredentials } from '../Imap/utils/CredentialsSelector';
 
-export class EmailSearchAi implements INodeType {
+export class EmailSearchAI implements INodeType {
   description: INodeTypeDescription = {
-    displayName: 'Email Search AI',
-    name: 'emailSearchAI',
+    displayName: 'EmailSearchAI',
+    name: 'emailSearchAi',
     icon: 'file:node-imap-icon.svg',
     group: ['main'],
     version: 1,
     subtitle: 'AI-optimized email search',
     description: 'Simple email search with minimal parameters - designed for AI agents',
     defaults: {
-      name: 'Email Search AI',
+      name: 'EmailSearchAI',
     },
-    inputs: [NodeConnectionType.Main],
-    outputs: [NodeConnectionType.Main],
+    inputs: ['main'],
+    outputs: ['main'],
     usableAsTool: true,
     credentials: [
       {
