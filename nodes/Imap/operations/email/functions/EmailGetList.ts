@@ -232,6 +232,18 @@ export const getEmailsListOperation: IResourceOperationDef = {
           includeAllHeaders: [false],
         },
       },
+    },
+    {
+      displayName: 'Maximum Results',
+      name: 'maxResults',
+      type: 'number',
+      default: 10,
+      description: 'Maximum number of emails to return. AI agents should use small numbers for "latest" searches (10-50) to avoid data overload.',
+      placeholder: '10',
+      typeOptions: {
+        minValue: 1,
+        maxValue: 1000,
+      },
     }
   ],
   async executeImapAction(context: IExecuteFunctions, itemIndex: number, client: ImapFlow): Promise<INodeExecutionData[] | null> {
@@ -291,14 +303,26 @@ export const getEmailsListOperation: IResourceOperationDef = {
     context.logger?.debug(`Search object: ${JSON.stringify(searchObject)}`);
     context.logger?.debug(`Fetch query: ${JSON.stringify(fetchQuery)}`);
 
+    // Get maxResults parameter for limiting results
+    const maxResults = context.getNodeParameter('maxResults', itemIndex) as number;
+    context.logger?.info(`Limiting results to ${maxResults} emails`);
+
     // wait for all emails to be fetched before processing them
     // because we might need to fetch the body parts for each email,
     // and this will freeze the client if we do it in parallel
     const emailsList = [];
+    let emailCount = 0;
     for  await (let email of client.fetch(searchObject, fetchQuery)) {
       emailsList.push(email);
+      emailCount++;
+
+      // Stop when we reach the limit
+      if (emailCount >= maxResults) {
+        context.logger?.info(`Reached maximum results limit of ${maxResults}, stopping fetch`);
+        break;
+      }
     }
-    context.logger?.info(`Found ${emailsList.length} emails`);
+    context.logger?.info(`Found ${emailsList.length} emails (limited to ${maxResults})`);
 
     // process the emails
     for (const email of emailsList) {
