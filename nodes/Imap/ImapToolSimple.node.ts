@@ -8,17 +8,17 @@ import { loadMailboxList } from './utils/SearchFieldParameters';
 import { CREDENTIALS_TYPE_CORE_IMAP_ACCOUNT, CREDENTIALS_TYPE_THIS_NODE, credentialNames, getImapCredentials } from './utils/CredentialsSelector';
 
 
-export class ImapTool implements INodeType {
+export class ImapToolSimple implements INodeType {
   description: INodeTypeDescription = {
-    displayName: 'IMAP Tool',
-    name: 'imapTool',
+    displayName: 'Smart Email Search',
+    name: 'imapToolSimple',
     icon: 'file:node-imap-icon.svg',
     group: ['transform'],
     version: 1,
-    subtitle: '={{ $parameter["operation"] + ": " + $parameter["resource"] }}',
-    description: 'Retrieve and manage emails via IMAP - AI Agent Tool Support',
+    subtitle: 'AI-optimized email finder',
+    description: 'Find emails with AI-optimized search parameters - minimal input, fast results',
     defaults: {
-      name: 'IMAP Tool',
+      name: 'Smart Email Search',
     },
     // eslint-disable-next-line n8n-nodes-base/node-class-description-inputs-wrong-regular-node
     inputs: [NodeConnectionType.Main],
