@@ -164,11 +164,26 @@ export const createDraftOperation: IResourceOperationDef = {
       const to = context.getNodeParameter('to', itemIndex) as string;
       const text = context.getNodeParameter('text', itemIndex) as string;
 
+      // Validate required fields and provide fallbacks for AI usage
+      if (!to || to.trim() === '') {
+        throw new NodeApiError(context.getNode(), {}, {
+          message: 'To field is required for creating email drafts. Please provide a recipient email address.',
+          description: 'AI agents must specify a valid recipient email address when creating drafts.',
+        });
+      }
+
+      if (!from || from.trim() === '') {
+        throw new NodeApiError(context.getNode(), {}, {
+          message: 'From field is required for creating email drafts. Please provide a sender email address.',
+          description: 'AI agents must specify a valid sender email address when creating drafts.',
+        });
+      }
+
       let json_data = {
-        from: from,
-        to: to,
-        subject: subject,
-        text: text,
+        from: from.trim(),
+        to: to.trim(),
+        subject: subject || 'Draft Email',
+        text: text || '',
       };
 
       type ComposeMailResult = {
