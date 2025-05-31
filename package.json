@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-imap-ai",
-  "version": "1.1.7",
+  "version": "1.1.8",
   "description": "AI-Agent ready IMAP node for n8n with enhanced $fromAI() integration and AI Tool support. Complete email and mailbox management with intelligent automation capabilities.",
   "keywords": [
     "n8n-community-node-package",
