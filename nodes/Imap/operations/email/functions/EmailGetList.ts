@@ -244,6 +244,114 @@ export const getEmailsListOperation: IResourceOperationDef = {
         minValue: 1,
         maxValue: 1000,
       },
+    },
+    // Direct AI Agent Parameters (for easier AI usage)
+    {
+      displayName: 'From Email Address (AI Direct)',
+      name: 'From_Email_Address',
+      type: 'string',
+      default: "={{ $fromAI('from_email', 'Email address of the sender to search for') }}",
+      description: 'Direct AI parameter for sender email address',
+      placeholder: 'sender@domain.com',
+      displayOptions: {
+        show: {
+          '@version': [1],
+        },
+      },
+    },
+    {
+      displayName: 'Subject Contains (AI Direct)',
+      name: 'Subject_Contains',
+      type: 'string',
+      default: "={{ $fromAI('subject_contains', 'Keywords to search in email subject') }}",
+      description: 'Direct AI parameter for subject keywords',
+      placeholder: 'meeting, urgent, invoice',
+      displayOptions: {
+        show: {
+          '@version': [1],
+        },
+      },
+    },
+    {
+      displayName: 'Email Content Contains (AI Direct)',
+      name: 'Email_Content_Contains',
+      type: 'string',
+      default: "={{ $fromAI('content_contains', 'Keywords to search in email content') }}",
+      description: 'Direct AI parameter for content keywords',
+      placeholder: 'password, confirmation, delivery',
+      displayOptions: {
+        show: {
+          '@version': [1],
+        },
+      },
+    },
+    {
+      displayName: 'To Email Address (AI Direct)',
+      name: 'To_Email_Address',
+      type: 'string',
+      default: "={{ $fromAI('to_email', 'Email address of the recipient to search for') }}",
+      description: 'Direct AI parameter for recipient email address',
+      placeholder: 'recipient@domain.com',
+      displayOptions: {
+        show: {
+          '@version': [1],
+        },
+      },
+    },
+    {
+      displayName: 'Since Date (AI Direct)',
+      name: 'Since_Date',
+      type: 'string',
+      default: "={{ $fromAI('since_date', 'Start date for email search (YYYY-MM-DD format)') }}",
+      description: 'Direct AI parameter for start date',
+      placeholder: '2025-01-01',
+      displayOptions: {
+        show: {
+          '@version': [1],
+        },
+      },
+    },
+    {
+      displayName: 'Before Date (AI Direct)',
+      name: 'Before_Date',
+      type: 'string',
+      default: "={{ $fromAI('before_date', 'End date for email search (YYYY-MM-DD format)') }}",
+      description: 'Direct AI parameter for end date',
+      placeholder: '2025-12-31',
+      displayOptions: {
+        show: {
+          '@version': [1],
+        },
+      },
+    },
+    {
+      displayName: 'Include All Headers (AI Direct)',
+      name: 'Include_All_Headers',
+      type: 'boolean',
+      default: false,
+      description: 'Whether to include all email headers in the response',
+      displayOptions: {
+        show: {
+          '@version': [1],
+        },
+      },
+    },
+    {
+      displayName: 'Maximum Results (AI Direct)',
+      name: 'Maximum_Results',
+      type: 'number',
+      default: 10,
+      description: 'Direct AI parameter for limiting results',
+      placeholder: '10',
+      typeOptions: {
+        minValue: 1,
+        maxValue: 1000,
+      },
+      displayOptions: {
+        show: {
+          '@version': [1],
+        },
+      },
     }
   ],
   async executeImapAction(context: IExecuteFunctions, itemIndex: number, client: ImapFlow): Promise<INodeExecutionData[] | null> {
@@ -303,8 +411,11 @@ export const getEmailsListOperation: IResourceOperationDef = {
     context.logger?.debug(`Search object: ${JSON.stringify(searchObject)}`);
     context.logger?.debug(`Fetch query: ${JSON.stringify(fetchQuery)}`);
 
-    // Get maxResults parameter for limiting results
-    const maxResults = context.getNodeParameter('maxResults', itemIndex) as number;
+    // Get maxResults parameter for limiting results (try direct AI parameter first)
+    let maxResults = context.getNodeParameter('Maximum_Results', itemIndex, 0, { extractValue: true }) as number;
+    if (!maxResults || maxResults === 0) {
+      maxResults = context.getNodeParameter('maxResults', itemIndex) as number;
+    }
     context.logger?.info(`Limiting results to ${maxResults} emails`);
 
     // wait for all emails to be fetched before processing them
