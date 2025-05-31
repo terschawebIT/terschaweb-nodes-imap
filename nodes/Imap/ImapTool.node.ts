@@ -20,13 +20,12 @@ export class ImapTool implements INodeType {
     defaults: {
       name: 'IMAP Tool',
     },
+    // eslint-disable-next-line n8n-nodes-base/node-class-description-inputs-wrong-regular-node
     inputs: [NodeConnectionType.Main],
+    // eslint-disable-next-line n8n-nodes-base/node-class-description-outputs-wrong
     outputs: [NodeConnectionType.Main],
     // AI Tool-spezifische Eigenschaften
     usableAsTool: true,
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore: aiEnabled ist kein Standardfeld, wird aber von n8n AI genutzt
-    aiEnabled: true,
     requestDefaults: {
       headers: {
         Accept: 'application/json',
