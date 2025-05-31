@@ -1,19 +1,36 @@
 {
-  "name": "n8n-nodes-imap",
-  "version": "2.8.0",
-  "description": "This node allows you to connect to an IMAP server and retrieve emails.",
+  "name": "n8n-nodes-imap-ai",
+  "version": "1.1.0",
+  "description": "AI-Agent ready IMAP node for n8n with enhanced $fromAI() integration and AI Tool support. Complete email and mailbox management with intelligent automation capabilities.",
   "keywords": [
-    "n8n-community-node-package"
+    "n8n-community-node-package",
+    "imap",
+    "email",
+    "ai-agent",
+    "ai-tool",
+    "automation",
+    "mailbox",
+    "ai-ready",
+    "fromAI",
+    "tool-support"
   ],
   "license": "MIT",
-  "homepage": "",
+  "homepage": "https://github.com/terschawebIT/terschaweb-nodes-imap",
   "author": {
-    "name": "Vasily Maslyukov",
-    "email": "auro.coding@gmail.com"
+    "name": "Niko Terschawetz",
+    "email": "niko.terschawetz@terschaweb.de",
+    "url": "https://terschaweb.de"
   },
+  "contributors": [
+    {
+      "name": "Vasily Maslyukov",
+      "email": "auro.coding@gmail.com",
+      "url": "https://github.com/umanamente/n8n-nodes-imap"
+    }
+  ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/umanamente/n8n-nodes-imap.git"
+    "url": "https://github.com/terschawebIT/terschaweb-nodes-imap.git"
   },
   "engines": {
     "node": ">=20"
@@ -25,7 +42,7 @@
     "format": "prettier nodes credentials --write",
     "lint": "eslint nodes credentials package.json",
     "lintfix": "eslint nodes credentials package.json --fix",
-    "prepublishOnly": "npm run build && npm run lint -c .eslintrc.prepublish.js nodes credentials package.json",
+    "prepublishOnly": "npm run build && npm run lint",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "files": [
@@ -37,7 +54,8 @@
       "dist/credentials/ImapCredentials.credentials.js"
     ],
     "nodes": [
-      "dist/nodes/Imap/Imap.node.js"
+      "dist/nodes/Imap/Imap.node.js",
+      "dist/nodes/Imap/ImapTool.node.js"
     ]
   },
   "devDependencies": {

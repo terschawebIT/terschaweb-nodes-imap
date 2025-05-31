@@ -1,2 +1,55 @@
-.DS_Store
+# Source files (only publish compiled dist/)
+nodes/
+credentials/
+*.ts
+tsconfig.json
+gulpfile.js
+
+# Development files
+.vscode/
+.github/
+test/
+tests/
+*.test.js
+*.test.ts
+
+# Build artifacts
 *.tsbuildinfo
+.eslintcache
+
+# Documentation (except README.md)
+docs/
+MILESTONES.md
+CHANGELOG.md
+
+# Git files
+.git/
+.gitignore
+
+# IDE files
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+
+# Logs
+*.log
+logs/
+
+# Package manager
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Only keep these files:
+# package.json
+# README.md
+# LICENSE
+# dist/

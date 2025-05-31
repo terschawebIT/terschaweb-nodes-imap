@@ -14,7 +14,7 @@ export const createMailboxOperation: IResourceOperationDef = {
       displayName: 'Top Level Mailbox',
       name: 'topLevelMailbox',
       type: 'boolean',
-      default: "={{ $fromAI('is_top_level', 'Whether to create a top level mailbox (true) or child mailbox (false)') }}",
+      default: false,
       description: 'Whether the mailbox is a top level mailbox or a child mailbox. AI can decide based on organizational structure.',
       required: true,
     },

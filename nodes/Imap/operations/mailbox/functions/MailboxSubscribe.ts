@@ -14,18 +14,20 @@ export const subscribeMailboxOperation: IResourceOperationDef = {
       displayName: 'Action',
       name: 'action',
       type: 'options',
-      default: "={{ $fromAI('subscription_action', 'Whether to subscribe or unsubscribe from the mailbox') }}",
-      description: 'Choose to subscribe (show folder) or unsubscribe (hide folder) from the mailbox.',
+      default: 'subscribe',
+      description: 'Choose to subscribe (show folder) or unsubscribe (hide folder) from the mailbox',
       options: [
         {
           name: 'Subscribe',
           value: 'subscribe',
           description: 'Subscribe to mailbox (make it visible in email clients)',
+										action: 'Subscribe to mailbox make it visible in email clients',
         },
         {
           name: 'Unsubscribe',
           value: 'unsubscribe',
           description: 'Unsubscribe from mailbox (hide it from email clients)',
+										action: 'Unsubscribe from mailbox hide it from email clients',
         },
       ],
       required: true,

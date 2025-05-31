@@ -22,7 +22,7 @@ export const getMailboxListOperation: IResourceOperationDef = {
       displayName: 'Include Status Fields',
       name: 'includeStatusFields',
       type: 'multiOptions',
-      default: "={{ $fromAI('status_fields', 'Array of status fields to include in the mailbox list response') }}",
+      default: [],
       description: 'Select which status fields to include. AI agents can choose specific fields based on their analysis needs.',
       // eslint-disable-next-line n8n-nodes-base/node-param-multi-options-type-unsorted-items
       options: [
