@@ -16,8 +16,8 @@ export class EmailSearchAi implements INodeType {
     defaults: {
       name: 'Email Search AI',
     },
-    inputs: ['main'],
-    outputs: ['main'],
+    inputs: [NodeConnectionType.Main],
+    outputs: [NodeConnectionType.Main],
     usableAsTool: true,
     credentials: [
       {
@@ -159,7 +159,7 @@ export class EmailSearchAi implements INodeType {
           });
           continue;
         }
-        throw new NodeApiError(this.getNode(), error as Error);
+        throw new NodeApiError(this.getNode(), { message: (error as Error).message });
       }
     }
 
