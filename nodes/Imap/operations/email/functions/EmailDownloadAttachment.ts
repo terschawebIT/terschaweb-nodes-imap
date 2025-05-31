@@ -9,33 +9,36 @@ export const downloadAttachmentOperation: IResourceOperationDef = {
   operation: {
     name: 'Download Attachment',
     value: 'downloadAttachment',
+    description: 'Download email attachments for processing, analysis, or storage. Perfect for AI agents to extract documents, images, files from emails automatically and process them in workflows.',
   },
   parameters: [
     {
       ...parameterSelectMailbox,
-      description: 'Select the mailbox',
+      description: 'Select the mailbox containing the email with attachments. AI agents can specify: INBOX, Sent, Archive, or custom folder names.',
     },
     {
       displayName: 'Email UID',
       name: 'emailUid',
       type: 'string',
-      default: '',
-      description: 'UID of the email to download',
+      default: "={{ $fromAI('email_uid', 'UID of the email containing attachments to download') }}",
+      description: 'UID of the email containing attachments. AI can specify this based on email search results.',
+      placeholder: '123',
     },
     {
       displayName: 'All Attachments',
       name: 'allAttachments',
       type: 'boolean',
       default: false,
-      description: 'Whether to download all attachments',
+      description: 'Whether to download all attachments from the email',
     },
     {
       displayName: 'Attachment Part IDs',
       name: 'partId',
       type: 'string',
-      default: '',
+      default: "={{ $fromAI('attachment_parts', 'Comma-separated list of attachment part IDs to download') }}",
       required: true,
-      description: 'Comma-separated list of attachment part IDs to download',
+      description: 'Comma-separated list of attachment part IDs to download. AI can specify these from email analysis.',
+      placeholder: '1.2,1.3,2.1',
       hint: 'Part IDs can be found in the email "attachmentsInfo" property',
       displayOptions: {
         show: {
@@ -159,6 +162,12 @@ export const downloadAttachmentOperation: IResourceOperationDef = {
 
     // add attachments info to the return item
     returnItem.json!.attachments = jsonAttachments;
+    returnItem.json!.operation = 'downloadAttachment';
+    returnItem.json!.emailUid = emailUid;
+    returnItem.json!.mailboxPath = mailboxPath;
+    returnItem.json!.totalAttachments = jsonAttachments.length;
+    returnItem.json!.downloadedAt = new Date().toISOString();
+    returnItem.json!.success = true;
     return [returnItem];
   },
 };

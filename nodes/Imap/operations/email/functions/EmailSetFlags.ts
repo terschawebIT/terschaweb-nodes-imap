@@ -16,63 +16,65 @@ export const setEmailFlagsOperation: IResourceOperationDef = {
   operation: {
     name: 'Set Flags',
     value: 'setEmailFlags',
-    description: 'Set flags on an email like "Seen" or "Flagged"',
+    description: 'Set or remove email flags like "Read/Unread", "Flagged", "Answered" etc. Perfect for AI agents to organize emails, mark as read, flag important messages, or manage email status automatically.',
   },
   parameters: [
     {
       ...parameterSelectMailbox,
-      description: 'Select the mailbox',
+      description: 'Select the mailbox containing the emails to modify. AI agents can specify: INBOX, Sent, Drafts, or custom folder names.',
     },
     {
       displayName: 'Email UID',
       name: 'emailUid',
       type: 'string',
-      default: '',
-      description: 'UID of the email to set flags',
-      hint: 'You can use comma separated list of UIDs',
+      default: "={{ $fromAI('email_uid', 'UID of the email or comma-separated list of email UIDs to modify flags for') }}",
+      description: 'UID of the email to set flags on. AI can specify single UID or comma-separated list for bulk operations.',
+      placeholder: '123 or 123,456,789',
+      hint: 'You can use comma separated list of UIDs to modify multiple emails at once',
     },
     {
-      displayName: 'Flags',
+      displayName: 'Email Flags to Modify',
       name: 'flags',
       type: 'collection',
-      default: [],
+      default: {},
       required: true,
-      placeholder: 'Add Flag',
+      placeholder: 'Add Flag to Modify',
+      description: 'Choose which email flags to set or remove. AI agents can intelligently set these based on email processing needs.',
       options: [
         {
           displayName: 'Answered',
           name: ImapFlags.Answered,
           type: 'boolean',
           default: false,
-          description: 'Whether email is answered',
-        },
-        {
-          displayName: 'Flagged',
-          name: ImapFlags.Flagged,
-          type: 'boolean',
-          default: false,
-          description: 'Whether email is flagged',
+          description: 'Whether email is marked as answered/replied to',
         },
         {
           displayName: 'Deleted',
           name: ImapFlags.Deleted,
           type: 'boolean',
           default: false,
-          description: 'Whether email is deleted',
-        },
-        {
-          displayName: 'Seen',
-          name: ImapFlags.Seen,
-          type: 'boolean',
-          default: false,
-          description: 'Whether email is seen',
+          description: 'Whether email is marked for deletion',
         },
         {
           displayName: 'Draft',
           name: ImapFlags.Draft,
           type: 'boolean',
           default: false,
-          description: 'Whether email is draft',
+          description: 'Whether email is marked as draft',
+        },
+        {
+          displayName: 'Flagged',
+          name: ImapFlags.Flagged,
+          type: 'boolean',
+          default: false,
+          description: 'Whether email is flagged as important',
+        },
+        {
+          displayName: 'Seen',
+          name: ImapFlags.Seen,
+          type: 'boolean',
+          default: false,
+          description: 'Whether email is marked as read/seen',
         },
       ],
     },
@@ -94,7 +96,7 @@ export const setEmailFlagsOperation: IResourceOperationDef = {
         }
     }
 
-    context.logger?.info(`Setting flags "${flagsToSet.join(',')}" and removing flags "${flagsToRemove.join(',')}" on email "${emailUid}"`);
+    context.logger?.info(`Setting flags "${flagsToSet.join(',')}" and removing flags "${flagsToRemove.join(',')}" on email "${emailUid}" in mailbox "${mailboxPath}"`);
 
     await client.mailboxOpen(mailboxPath, { readOnly: false });
 
@@ -104,7 +106,7 @@ export const setEmailFlagsOperation: IResourceOperationDef = {
       });
       if (!isSuccess) {
         throw new NodeApiError(context.getNode(), {}, {
-          message: "Unable to set flags, unknown error",
+          message: `Unable to set flags ${flagsToSet.join(', ')} on email UID ${emailUid}`,
         });
       }
     }
@@ -114,10 +116,23 @@ export const setEmailFlagsOperation: IResourceOperationDef = {
       });
       if (!isSuccess) {
         throw new NodeApiError(context.getNode(), {}, {
-          message: "Unable to remove flags, unknown error",
+          message: `Unable to remove flags ${flagsToRemove.join(', ')} from email UID ${emailUid}`,
         });
       }
     }
+
+    // Return success information
+    returnData.push({
+      json: {
+        success: true,
+        emailUid: emailUid,
+        mailboxPath: mailboxPath,
+        flagsSet: flagsToSet,
+        flagsRemoved: flagsToRemove,
+        totalFlags: flagsToSet.length + flagsToRemove.length,
+        operation: 'setEmailFlags'
+      },
+    });
 
     return returnData;
   },

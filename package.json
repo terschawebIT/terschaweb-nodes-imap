@@ -15,17 +15,18 @@
     "type": "git",
     "url": "https://github.com/umanamente/n8n-nodes-imap.git"
   },
+  "engines": {
+    "node": ">=20"
+  },
   "main": "index.js",
   "scripts": {
     "build": "tsc && gulp build:icons",
     "dev": "tsc --watch",
-    "run-dev": "npm run build && cross-env N8N_LOG_LEVEL=debug n8n start",
-    "run-dev-tunnel": "npm run build && cross-env N8N_LOG_LEVEL=debug n8n start --tunnel",
     "format": "prettier nodes credentials --write",
     "lint": "eslint nodes credentials package.json",
     "lintfix": "eslint nodes credentials package.json --fix",
     "prepublishOnly": "npm run build && npm run lint -c .eslintrc.prepublish.js nodes credentials package.json",
-    "semantic-release": "semantic-release"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "files": [
     "dist"
@@ -40,23 +41,16 @@
     ]
   },
   "devDependencies": {
-    "@google/semantic-release-replace-plugin": "^1.2.7",
-    "@semantic-release/changelog": "^6.0.3",
-    "@semantic-release/git": "^10.0.1",
-    "@semantic-release/npm": "^12.0.1",
-    "@semantic-release/release-notes-generator": "^14.0.1",
     "@types/imapflow": "^1.0.19",
     "@types/mailparser": "^3.4.4",
     "@types/nodemailer": "^6.4.17",
-    "@typescript-eslint/parser": "~7.17",
-    "conventional-changelog-conventionalcommits": "^8.0.0",
-    "cross-env": "^7.0.3",
-    "eslint-plugin-n8n-nodes-base": "^1.16.1",
+    "@typescript-eslint/parser": "^8.18.2",
+    "eslint": "^8.57.0",
+    "eslint-plugin-n8n-nodes-base": "^1.16.3",
     "gulp": "^5.0.0",
-    "n8n-workflow": "*",
-    "prettier": "^3.3.3",
-    "semantic-release": "^24.0.0",
-    "typescript": "~5.5.4"
+    "n8n-workflow": "^1.82.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2"
   },
   "peerDependencies": {
     "n8n-workflow": "*"

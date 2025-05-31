@@ -1,4 +1,4 @@
-import { AppendResonseObject, ImapFlow } from "imapflow";
+import { AppendResponseObject, ImapFlow } from "imapflow";
 import * as nodemailer from 'nodemailer';
 import { IExecuteFunctions, INodeExecutionData, NodeApiError } from "n8n-workflow";
 import { IResourceOperationDef } from "../../../utils/CommonDefinitions";
@@ -11,11 +11,12 @@ export const createDraftOperation: IResourceOperationDef = {
   operation: {
     name: 'Create Draft',
     value: 'createDraft',
+    description: 'Create draft emails for later sending or review. Perfect for AI agents to compose automated responses, prepare emails for approval, or create template drafts based on data processing.',
   },
   parameters: [
     {
       ...parameterSelectMailbox,
-      description: 'Select the mailbox',
+      description: 'Select the mailbox where the draft will be stored. AI agents can specify: Drafts, INBOX, or custom folder names.',
       name: PARAM_NAME_DESTINATION_MAILBOX,
     },
     // select input format (RFC822 or fields)
@@ -34,11 +35,11 @@ export const createDraftOperation: IResourceOperationDef = {
         },
       ],
       default: 'fields',
-      description: 'Select the input format of the email content',
+      description: 'Select the input format of the email content. AI can choose based on complexity needs.',
     },
     // required parameters for fields input format
     {
-      displayName: 'Use <a href="https://github.com/umanamente/n8n-nodes-eml" target="_blank"><pre>n8n-nodes-eml</pre></a> to compose complex emails. ' + 
+      displayName: 'Use <a href="https://github.com/umanamente/n8n-nodes-eml" target="_blank"><pre>n8n-nodes-eml</pre></a> to compose complex emails. ' +
         'It supports attachments and other features. ' +
         'Then use RFC822 input format provided by that node.',
       name: 'noticeSlowResponse',
@@ -56,8 +57,9 @@ export const createDraftOperation: IResourceOperationDef = {
       displayName: 'Subject',
       name: 'subject',
       type: 'string',
-      default: '',
-      description: 'The subject of the email',
+      default: "={{ $fromAI('email_subject', 'Subject line for the draft email') }}",
+      description: 'The subject of the email. AI can generate contextual subjects based on content or purpose.',
+      placeholder: 'Meeting Summary | Invoice Request | Follow-up',
       displayOptions: {
         show: {
           inputFormat: [
@@ -70,8 +72,9 @@ export const createDraftOperation: IResourceOperationDef = {
       displayName: 'From',
       name: 'from',
       type: 'string',
-      default: '',
-      description: 'The email address of the sender',
+      default: "={{ $fromAI('sender_email', 'Email address of the sender') }}",
+      description: 'The email address of the sender. AI can use configured sender addresses.',
+      placeholder: 'sender@company.com',
       displayOptions: {
         show: {
           inputFormat: [
@@ -84,8 +87,9 @@ export const createDraftOperation: IResourceOperationDef = {
       displayName: 'To',
       name: 'to',
       type: 'string',
-      default: '',
-      description: 'The email address of the recipient',
+      default: "={{ $fromAI('recipient_email', 'Email address of the recipient') }}",
+      description: 'The email address of the recipient. AI can extract from previous email threads.',
+      placeholder: 'recipient@company.com',
       displayOptions: {
         show: {
           inputFormat: [
@@ -98,8 +102,9 @@ export const createDraftOperation: IResourceOperationDef = {
       displayName: 'Text',
       name: 'text',
       type: 'string',
-      default: '',
-      description: 'The text of the email',
+      default: "={{ $fromAI('email_content', 'Text content of the email message') }}",
+      description: 'The text content of the email. AI can generate personalized content based on data and context.',
+      placeholder: 'Dear [Name], Thank you for...',
       typeOptions: {
         rows: 5,
       },
@@ -222,7 +227,7 @@ export const createDraftOperation: IResourceOperationDef = {
 
     await client.mailboxOpen(destinationMailboxPath, { readOnly: false });
 
-    const resp : AppendResonseObject = await client.append(
+    const resp : AppendResponseObject = await client.append(
       destinationMailboxPath,
       rfc822Content,
       ["\\Draft"],

@@ -15,22 +15,21 @@ export const getMailboxListOperation: IResourceOperationDef = {
   operation: {
     name: 'Get Many',
     value: 'loadMailboxList',
-    description: 'Get a list of mailboxes',
+    description: 'Get comprehensive list of all mailbox folders with statistics. Perfect for AI agents to analyze folder structures, find specific mailboxes, or monitor email organization.',
   },
   parameters: [
-    {
-      displayName: 'Including status fields might slow down the response',
-      name: 'noticeSlowResponse',
-      type: 'notice',
-      default: '',
-    },
     {
       displayName: 'Include Status Fields',
       name: 'includeStatusFields',
       type: 'multiOptions',
-      default: [],
+      default: "={{ $fromAI('status_fields', 'Array of status fields to include in the mailbox list response') }}",
+      description: 'Select which status fields to include. AI agents can choose specific fields based on their analysis needs.',
       // eslint-disable-next-line n8n-nodes-base/node-param-multi-options-type-unsorted-items
       options: [
+        {
+          name: 'Highest Modseq',
+          value: MailboxListStatusFields.includeHighestModseq,
+        },
         {
           name: 'Message Count',
           value: MailboxListStatusFields.includeMessageCount,
@@ -38,10 +37,6 @@ export const getMailboxListOperation: IResourceOperationDef = {
         {
           name: 'Recent Count',
           value: MailboxListStatusFields.includeRecentCount,
-        },
-        {
-          name: 'Unseen Count',
-          value: MailboxListStatusFields.includeUnseenCount,
         },
         {
           name: 'UID Next',
@@ -52,12 +47,18 @@ export const getMailboxListOperation: IResourceOperationDef = {
           value: MailboxListStatusFields.includeUidValidity,
         },
         {
-          name: 'Highest Modseq',
-          value: MailboxListStatusFields.includeHighestModseq,
+          name: 'Unseen Count',
+          value: MailboxListStatusFields.includeUnseenCount,
         },
       ],
     },
-
+    {
+      displayName: 'Performance Notice',
+      name: 'noticeSlowResponse',
+      type: 'notice',
+      default: '',
+      description: '💡 Including status fields might slow down the response. AI agents should only request needed fields for optimal performance.',
+    },
   ],
   async executeImapAction(context: IExecuteFunctions, itemIndex: number, client: ImapFlow): Promise<INodeExecutionData[] | null> {
     var returnData: INodeExecutionData[] = [];
@@ -74,18 +75,49 @@ export const getMailboxListOperation: IResourceOperationDef = {
     const mailboxes = await client.list({
       statusQuery: statusQuery,
     });
+
+    let totalMailboxes = 0;
+    let totalMessages = 0;
+    let totalUnseen = 0;
+
     for (const mailbox of mailboxes) {
       context.logger?.info(`  ${mailbox.path}`);
+
+      // Calculate totals for summary
+      totalMailboxes++;
+      if (mailbox.status?.messages) totalMessages += mailbox.status.messages;
+      if (mailbox.status?.unseen) totalUnseen += mailbox.status.unseen;
+
       var item_json = {
+        operation: 'getMailboxList',
         path: mailbox.path,
         name: mailbox.name,
         status: mailbox.status,
+        // Enhanced metadata for AI agents
+        hasMessages: mailbox.status?.messages ? mailbox.status.messages > 0 : false,
+        hasUnseenMessages: mailbox.status?.unseen ? mailbox.status.unseen > 0 : false,
+        isLeaf: !mailbox.subscribed, // Approximation for leaf folders
+        level: mailbox.path.split('/').length - 1, // Folder depth
       };
       context.logger?.info(`  ${JSON.stringify(item_json)}`);
       returnData.push({
         json: item_json,
       });
     }
+
+    // Add summary item for AI agents
+    returnData.push({
+      json: {
+        operation: 'getMailboxList',
+        summary: true,
+        totalMailboxes,
+        totalMessages,
+        totalUnseen,
+        retrievedAt: new Date().toISOString(),
+        statusFieldsIncluded: includeStatusFields,
+      },
+    });
+
     return returnData;
   },
 };

@@ -7,20 +7,20 @@ export const createMailboxOperation: IResourceOperationDef = {
   operation: {
     name: 'Create',
     value: 'createMailbox',
-    description: 'Create a new mailbox',
+    description: 'Create new mailbox folders for email organization. Perfect for AI agents to automatically create folders based on senders, subjects, or categories for intelligent email sorting.',
   },
   parameters: [
     {
       displayName: 'Top Level Mailbox',
       name: 'topLevelMailbox',
       type: 'boolean',
-      default: true,
-      description: 'Whether the mailbox is a top level mailbox or a child mailbox',
+      default: "={{ $fromAI('is_top_level', 'Whether to create a top level mailbox (true) or child mailbox (false)') }}",
+      description: 'Whether the mailbox is a top level mailbox or a child mailbox. AI can decide based on organizational structure.',
       required: true,
     },
     {
       ...parameterSelectMailbox,
-      description: 'Parent mailbox',
+      description: 'Parent mailbox where the new mailbox will be created. AI agents can specify existing folders like: INBOX, Archive, Projects, etc.',
       required: false,
       displayOptions: {
         show: {
@@ -32,8 +32,9 @@ export const createMailboxOperation: IResourceOperationDef = {
       displayName: 'Mailbox Name',
       name: 'mailboxName',
       type: 'string',
-      default: '',
-      description: 'Name of the mailbox to create',
+      default: "={{ $fromAI('folder_name', 'Name of the new mailbox/folder to create') }}",
+      description: 'Name of the mailbox to create. AI can generate names based on email content, senders, or categories.',
+      placeholder: 'Invoices | Support-Tickets | Project-Alpha | Client-Reports',
       required: true,
     },
   ],
@@ -52,6 +53,15 @@ export const createMailboxOperation: IResourceOperationDef = {
 
     const mailboxCreateResp : MailboxCreateResponse = await client.mailboxCreate(resultPath);
     var item_json = JSON.parse(JSON.stringify(mailboxCreateResp));
+
+    // Add enhanced metadata for AI agents
+    item_json.operation = 'createMailbox';
+    item_json.mailboxName = mailboxName;
+    item_json.parentMailbox = mailboxPath || 'root';
+    item_json.fullPath = resultPath;
+    item_json.success = true;
+    item_json.createdAt = new Date().toISOString();
+
     returnData.push({
       json: item_json,
     });

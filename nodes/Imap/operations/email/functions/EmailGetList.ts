@@ -1,86 +1,209 @@
-import { FetchQueryObject, ImapFlow, Readable } from "imapflow";
+import { FetchQueryObject, ImapFlow } from "imapflow";
+import { Readable } from "stream";
 import { IExecuteFunctions, INodeExecutionData } from "n8n-workflow";
 import { IResourceOperationDef } from "../../../utils/CommonDefinitions";
 import { getMailboxPathFromNodeParameter, parameterSelectMailbox } from "../../../utils/SearchFieldParameters";
-import { emailSearchParameters, getEmailSearchParametersFromNode } from "../../../utils/EmailSearchParameters";
+import { getEmailSearchParametersFromNode } from "../../../shared/utils/ParameterHelpers";
 import { simpleParser } from 'mailparser';
 import { getEmailPartsInfoRecursive } from "../../../utils/EmailParts";
-
-
-enum EmailParts {
-  BodyStructure = 'bodyStructure',
-  Flags = 'flags',
-  Size = 'size',
-  AttachmentsInfo = 'attachmentsInfo',
-  TextContent = 'textContent',
-  HtmlContent = 'htmlContent',
-  Headers = 'headers',
-}
-
-function streamToString(stream: Readable): Promise<string> {
-  return new Promise((resolve, reject) => {
-    if (!stream) {
-      resolve('');
-    } else {
-      const chunks: any[] = [];
-      stream.on('data', (chunk) => {
-        chunks.push(chunk);
-      });
-      stream.on('end', () => {
-        resolve(Buffer.concat(chunks).toString('utf8'));
-      });
-      stream.on('error', reject);
-    }
-  });
-}
-
+import { streamToString } from "../../../shared/utils/StreamHelpers";
+import { EmailParts } from "../../../shared/constants/EmailParts";
 
 export const getEmailsListOperation: IResourceOperationDef = {
   operation: {
     name: 'Get Many',
     value: 'getEmailsList',
+    description: 'Retrieve emails from an IMAP mailbox with advanced search and filtering capabilities. Perfect for AI agents to find specific emails, analyze content, or process email data automatically.',
   },
   parameters: [
     {
       ...parameterSelectMailbox,
-      description: 'Select the mailbox',
+      description: 'Select the mailbox to search for emails. AI agents can specify: INBOX, Sent, Drafts, or custom folder names.',
     },
-    ...emailSearchParameters,
-    //
     {
-      displayName: 'Include Message Parts',
-      name: 'includeParts',
-      type: 'multiOptions',
-      placeholder: 'Add Part',
-      default: [],
+      displayName: "Date Range",
+      name: "emailDateRange",
+      type: "collection",
+      placeholder: "Add Date Range",
+      default: { since: "" },
+      description: "Filter emails by date range. AI agents can specify dates like 'last week', 'yesterday', or specific dates.",
       options: [
         {
-          name: 'Text Content',
+          displayName: "Since Date",
+          name: "since",
+          type: "dateTime",
+          default: "",
+          description: "Start date of search. AI can specify: 'yesterday', 'last week', '2024-01-01', etc.",
+        },
+        {
+          displayName: "Before Date",
+          name: "before",
+          type: "dateTime",
+          default: "",
+          description: "End date of search. AI can specify: 'today', 'last month', '2024-12-31', etc.",
+        },
+      ],
+    },
+    {
+      displayName: "Email Flags Filter",
+      name: "emailFlags",
+      type: "collection",
+      placeholder: "Add Flag Filter",
+      default: {},
+      description: "Filter emails by their status flags. AI can specify: 'unread emails', 'flagged emails', 'draft emails', etc.",
+      options: [
+        {
+          displayName: "Is Answered",
+          name: "answered",
+          type: "boolean",
+          default: false,
+          description: "Whether emails have been replied to",
+        },
+        {
+          displayName: "Is Deleted",
+          name: "deleted",
+          type: "boolean",
+          default: false,
+          description: "Whether emails are marked for deletion",
+        },
+        {
+          displayName: "Is Draft",
+          name: "draft",
+          type: "boolean",
+          default: false,
+          description: "Whether emails are drafts (unsent emails)",
+        },
+        {
+          displayName: "Is Flagged",
+          name: "flagged",
+          type: "boolean",
+          default: false,
+          description: "Whether emails are important/flagged",
+        },
+        {
+          displayName: 'Is Read/Unread',
+          name: "seen",
+          type: "boolean",
+          default: false,
+          description: "Whether emails are read (true) or unread (false)",
+        },
+        {
+          displayName: "Is Recent",
+          name: "recent",
+          type: "boolean",
+          default: false,
+          description: "Whether emails are recently received",
+        },
+      ],
+    },
+    {
+      displayName: "Email Search Filters",
+      name: "emailSearchFilters",
+      type: "collection",
+      placeholder: "Add Search Filter",
+      default: {},
+      description: "Advanced search filters for finding specific emails. AI can intelligently populate these based on natural language requests.",
+      options: [
+        {
+          displayName: "BCC Email Address",
+          name: "bcc",
+          type: "string",
+          default: "={{ $fromAI('bcc_email', 'Email address in BCC field') }}",
+          description: "Email address or name in BCC field",
+          placeholder: "admin@company.com",
+        },
+        {
+          displayName: "CC Email Address",
+          name: "cc",
+          type: "string",
+          default: "={{ $fromAI('cc_email', 'Email address in CC field') }}",
+          description: "Email address or name in CC field",
+          placeholder: "manager@company.com",
+        },
+        {
+          displayName: "Email Content Contains",
+          name: "text",
+          type: "string",
+          default: "={{ $fromAI('content_keywords', 'Keywords to search in email body content') }}",
+          description: "Search for specific text in email body content",
+          placeholder: "password reset, order confirmation, delivery",
+        },
+        {
+          displayName: "From Email Address",
+          name: "from",
+          type: "string",
+          default: "={{ $fromAI('sender_email', 'Email address of the sender to search for') }}",
+          description: "Email address or name of the sender",
+          placeholder: "john@example.com or John Doe",
+        },
+        {
+          displayName: "Specific Email UIDs",
+          name: "uid",
+          type: "string",
+          default: "={{ $fromAI('email_uids', 'Comma-separated list of specific email UIDs to retrieve') }}",
+          description: 'Comma-separated list of specific email UIDs',
+          placeholder: '1,2,3,15,42',
+        },
+        {
+          displayName: "Subject Contains",
+          name: "subject",
+          type: "string",
+          default: "={{ $fromAI('subject_keywords', 'Keywords to search in email subject line') }}",
+          description: "Search for specific text in email subject line",
+          placeholder: "invoice, meeting, urgent, project update",
+        },
+        {
+          displayName: "To Email Address",
+          name: "to",
+          type: "string",
+          default: "={{ $fromAI('recipient_email', 'Email address of the recipient to search for') }}",
+          description: "Email address or name of the recipient",
+          placeholder: "support@company.com or Support Team",
+        },
+      ],
+    },
+    {
+      displayName: 'Email Content to Include',
+      name: 'includeParts',
+      type: 'multiOptions',
+      placeholder: 'Select Content Types',
+      default: [],
+      description: 'Select which parts of the email to include in the response. AI agents can choose based on their specific needs.',
+      options: [
+        {
+          name: 'Text Content (Plain Text)',
           value: EmailParts.TextContent,
+          description: 'Include the plain text content - ideal for reading and analysis',
         },
         {
           name: 'HTML Content',
           value: EmailParts.HtmlContent,
+          description: 'Include HTML formatted content - useful for preserving formatting',
         },
         {
           name: 'Attachments Info',
           value: EmailParts.AttachmentsInfo,
+          description: 'Include attachment information - useful for file processing',
         },
         {
-          name: 'Flags',
+          name: 'Email Flags',
           value: EmailParts.Flags,
+          description: 'Include email status flags - useful for status analysis',
         },
         {
-          name: 'Size',
+          name: 'Email Size',
           value: EmailParts.Size,
+          description: 'Include email size in bytes - useful for storage analysis',
         },
         {
-          name: 'Body Structure',
+          name: 'Email Structure',
           value: EmailParts.BodyStructure,
+          description: 'Include technical email structure - useful for advanced processing',
         },
         {
-          name: 'Headers',
+          name: 'Email Headers',
           value: EmailParts.Headers,
+          description: 'Include email headers - useful for routing and technical analysis',
         },
       ],
     },
@@ -89,12 +212,10 @@ export const getEmailsListOperation: IResourceOperationDef = {
       name: 'includeAllHeaders',
       type: 'boolean',
       default: true,
-      description: 'Whether to include all headers in the output',
+      description: 'Whether to include all email headers or only specific ones',
       displayOptions: {
         show: {
-          includeParts: [
-            EmailParts.Headers,
-          ],
+          includeParts: [EmailParts.Headers],
         },
       },
     },
@@ -102,17 +223,13 @@ export const getEmailsListOperation: IResourceOperationDef = {
       displayName: 'Headers to Include',
       name: 'headersToInclude',
       type: 'string',
-      default: '',
-      description: 'Comma-separated list of headers to include',
-      placeholder: 'received,authentication-results,return-path',
+      default: "={{ $fromAI('email_headers', 'Comma-separated list of specific email headers to include for analysis') }}",
+      description: 'Comma-separated list of specific email headers to include',
+      placeholder: 'received,authentication-results,return-path,date,message-ID',
       displayOptions: {
         show: {
-          includeParts: [
-            EmailParts.Headers,
-          ],
-          includeAllHeaders: [
-            false,
-          ],
+          includeParts: [EmailParts.Headers],
+          includeAllHeaders: [false],
         },
       },
     }

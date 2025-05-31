@@ -1,4 +1,4 @@
-import { ICredentialTestFunctions, ICredentialsDecrypted, IExecuteFunctions, INodeCredentialTestResult, INodeExecutionData, INodeType, INodeTypeDescription } from 'n8n-workflow';
+import { ICredentialTestFunctions, ICredentialsDecrypted, IExecuteFunctions, INodeCredentialTestResult, INodeExecutionData, INodeType, INodeTypeDescription, NodeConnectionType } from 'n8n-workflow';
 import { allResourceDefinitions } from './operations/ResourcesList';
 import { getAllResourceNodeParameters } from './utils/CommonDefinitions';
 import { ImapCredentialsData } from '../../credentials/ImapCredentials.credentials';
@@ -20,8 +20,10 @@ export class Imap implements INodeType {
     defaults: {
       name: 'IMAP',
     },
-    inputs: ['main'],
-    outputs: ['main'],
+    // eslint-disable-next-line n8n-nodes-base/node-class-description-inputs-wrong-regular-node
+    inputs: [NodeConnectionType.Main],
+    // eslint-disable-next-line n8n-nodes-base/node-class-description-outputs-wrong
+    outputs: [NodeConnectionType.Main],
     credentials: [
       // using credentials from Core IMAP Trigger node
       {
@@ -120,9 +122,10 @@ export class Imap implements INodeType {
     try {
       await client.connect();
     } catch (error) {
-      this.logger.error(`Connection failed: ${error.message}`);
+      const errorMessage = (error as any)?.message || 'Connection failed';
+      this.logger.error(`Connection failed: ${errorMessage}`);
       throw new NodeApiError(this.getNode(), {}, {
-        message: error.responseText || error.message || 'Unknown error',
+        message: (error as any)?.responseText || errorMessage || 'Unknown error',
       });
     }
 
@@ -171,7 +174,7 @@ export class Imap implements INodeType {
 
             // seems to be unknown error, check IMAP internal errors and include them in the error message
 
-            var errorMessage = error.responseText || error.message || undefined;
+            var errorMessage = (error as any)?.responseText || (error as any)?.message || undefined;
             if (!errorMessage) {
               if (internalImapErrorsMessage) {
                 errorMessage = internalImapErrorsMessage;
@@ -205,7 +208,7 @@ export class Imap implements INodeType {
     } catch (error) {
       // close connection and rethrow error
       client.logout();
-      this.logger?.error(`IMAP connection closed. Error: ${error.message}`);
+      this.logger?.error(`IMAP connection closed. Error: ${(error as any)?.message || 'Unknown error'}`);
       throw error;
     }
 
@@ -228,7 +231,7 @@ export class Imap implements INodeType {
         } catch (error) {
           return {
             status: 'Error',
-            message: error.message,
+            message: (error as any)?.message || 'Test failed',
           };
         }
         return {

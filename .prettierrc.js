@@ -1,3 +1,6 @@
+/**
+ * @type {import('prettier').Config}
+ */
 module.exports = {
   /**
    * https://prettier.io/docs/en/options.html#semicolons
