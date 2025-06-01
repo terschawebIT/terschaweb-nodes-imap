@@ -6,3 +6,13 @@ dist
 npm-debug.log*
 yarn.lock
 .vscode/launch.json
+
+# NPM package files
+*.tgz
+
+# Temporary package extraction directory
+package/
+
+# Build artifacts
+*.js.map
+*.d.ts

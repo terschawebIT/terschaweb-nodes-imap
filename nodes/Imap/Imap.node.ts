@@ -21,9 +21,17 @@ export class Imap implements INodeType {
       name: 'IMAP',
     },
     // eslint-disable-next-line n8n-nodes-base/node-class-description-inputs-wrong-regular-node
-    inputs: [NodeConnectionType.Main],
+    inputs: [NodeConnectionType.Main] as NodeConnectionType[],
     // eslint-disable-next-line n8n-nodes-base/node-class-description-outputs-wrong
-    outputs: [NodeConnectionType.Main],
+    outputs: [NodeConnectionType.Main] as NodeConnectionType[],
+    // AI Tool support with conditional activation
+    usableAsTool: true,
+    requestDefaults: {
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+    },
     credentials: [
       // using credentials from Core IMAP Trigger node
       {
@@ -67,6 +75,32 @@ export class Imap implements INodeType {
       },*/
     ],
     properties: [
+      // AI Mode Selection - this controls complexity
+      {
+        displayName: 'Interface Mode',
+        name: 'interfaceMode',
+        type: 'options',
+        default: 'ai_simple',
+        description: 'Choose interface complexity level',
+        options: [
+          {
+            name: 'AI Simple (Recommended for Agents)',
+            value: 'ai_simple',
+            description: 'Simplified interface optimized for AI agents - prevents analysis paralysis',
+          },
+          {
+            name: 'AI Advanced',
+            value: 'ai_advanced',
+            description: 'Full parameter access for AI agents',
+          },
+          {
+            name: 'Human Full',
+            value: 'human_full',
+            description: 'Complete interface for human users',
+          },
+        ],
+      },
+
       // credential type
       {
         displayName: 'Credential Type',
