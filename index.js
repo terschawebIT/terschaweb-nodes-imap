@@ -6,7 +6,7 @@ module.exports = {
     displayName: 'IMAP AI Nodes',
     name: 'n8n-nodes-imap-ai',
     description: 'AI-Agent ready IMAP nodes for n8n with enhanced email management capabilities',
-    version: '1.1.19',
+    version: '1.1.20',
     nodes: [
       'dist/nodes/Imap/Imap.node.js',
       'dist/nodes/EmailSearchAI/EmailSearchAi.node.js'
