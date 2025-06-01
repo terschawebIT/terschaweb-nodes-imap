@@ -17,9 +17,9 @@ export class EmailSearchAI implements INodeType {
       name: 'EmailSearchAI',
     },
     // eslint-disable-next-line n8n-nodes-base/node-class-description-inputs-wrong-regular-node
-    inputs: [NodeConnectionType.Main],
+    inputs: [NodeConnectionType.Main] as NodeConnectionType[],
     // eslint-disable-next-line n8n-nodes-base/node-class-description-outputs-wrong
-    outputs: [NodeConnectionType.Main],
+    outputs: [NodeConnectionType.Main] as NodeConnectionType[],
     usableAsTool: true,
     credentials: [
       {

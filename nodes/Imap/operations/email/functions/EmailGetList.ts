@@ -51,11 +51,6 @@ export const getEmailsListOperation: IResourceOperationDef = {
       placeholder: "Add Flag Filter",
       default: {},
       description: "Filter emails by their status flags. AI can specify: 'unread emails', 'flagged emails', 'draft emails', etc.",
-      displayOptions: {
-        show: {
-          interfaceMode: ['ai_advanced', 'human_full'],
-        },
-      },
       options: [
         {
           displayName: "Is Answered",
@@ -108,11 +103,6 @@ export const getEmailsListOperation: IResourceOperationDef = {
       placeholder: "Add Search Filter",
       default: {},
       description: "Advanced search filters for finding specific emails. AI can intelligently populate these based on natural language requests.",
-      displayOptions: {
-        show: {
-          interfaceMode: ['ai_advanced', 'human_full'],
-        },
-      },
       options: [
         {
           displayName: "BCC Email Address",
@@ -179,11 +169,6 @@ export const getEmailsListOperation: IResourceOperationDef = {
       placeholder: 'Select Content Types',
       default: [],
       description: 'Select which parts of the email to include in the response. AI agents can choose based on their specific needs.',
-      displayOptions: {
-        show: {
-          interfaceMode: ['ai_advanced', 'human_full'],
-        },
-      },
       options: [
         {
           name: 'Text Content (Plain Text)',
@@ -231,7 +216,6 @@ export const getEmailsListOperation: IResourceOperationDef = {
       displayOptions: {
         show: {
           includeParts: [EmailParts.Headers],
-          interfaceMode: ['ai_advanced', 'human_full'],
         },
       },
     },
@@ -246,7 +230,6 @@ export const getEmailsListOperation: IResourceOperationDef = {
         show: {
           includeParts: [EmailParts.Headers],
           includeAllHeaders: [false],
-          interfaceMode: ['ai_advanced', 'human_full'],
         },
       },
     },
@@ -257,11 +240,6 @@ export const getEmailsListOperation: IResourceOperationDef = {
       default: 10,
       description: 'Maximum number of emails to return. AI agents should use small numbers for "latest" searches (10-50) to avoid data overload.',
       placeholder: '10',
-      displayOptions: {
-        show: {
-          interfaceMode: ['ai_advanced', 'human_full'],
-        },
-      },
       typeOptions: {
         minValue: 1,
         maxValue: 1000,
@@ -275,11 +253,6 @@ export const getEmailsListOperation: IResourceOperationDef = {
       default: "={{ $fromAI('from_email', 'Email address or name of sender to search for. Can use partial names like \"conny\" for fuzzy matching.') }}",
       description: 'Direct AI parameter for sender email address or name. Supports partial matching - e.g., "conny" will find "conny@domain.com" and "Conny Smith".',
       placeholder: 'conny, john@example.com, or "John Doe"',
-      displayOptions: {
-        show: {
-          interfaceMode: ['ai_simple', 'ai_advanced'],
-        },
-      },
     },
     {
       displayName: 'Subject Contains (AI Direct)',
@@ -288,11 +261,6 @@ export const getEmailsListOperation: IResourceOperationDef = {
       default: "={{ $fromAI('subject_contains', 'Keywords or phrases to search in email subject. Supports partial matching.') }}",
       description: 'Direct AI parameter for subject keywords. Supports partial matching - e.g., "meeting" finds "Team Meeting" and "Meeting Notes".',
       placeholder: 'meeting, urgent, invoice, "project update"',
-      displayOptions: {
-        show: {
-          interfaceMode: ['ai_simple', 'ai_advanced'],
-        },
-      },
     },
     {
       displayName: 'Email Content Contains (AI Direct)',
@@ -301,11 +269,6 @@ export const getEmailsListOperation: IResourceOperationDef = {
       default: "={{ $fromAI('content_contains', 'Keywords or phrases to search in email content. Supports partial matching.') }}",
       description: 'Direct AI parameter for content keywords. Supports partial matching - finds text anywhere in email body.',
       placeholder: 'password, confirmation, delivery, "thank you"',
-      displayOptions: {
-        show: {
-          interfaceMode: ['ai_simple', 'ai_advanced'],
-        },
-      },
     },
     {
       displayName: 'To Email Address (AI Direct)',
@@ -314,11 +277,6 @@ export const getEmailsListOperation: IResourceOperationDef = {
       default: "={{ $fromAI('to_email', 'Email address or name of recipient to search for. Can use partial names for fuzzy matching.') }}",
       description: 'Direct AI parameter for recipient email address or name. Supports partial matching like sender field.',
       placeholder: 'support, admin@company.com, or "Support Team"',
-      displayOptions: {
-        show: {
-          interfaceMode: ['ai_simple', 'ai_advanced'],
-        },
-      },
     },
     {
       displayName: 'Since Date (AI Direct)',
@@ -327,11 +285,6 @@ export const getEmailsListOperation: IResourceOperationDef = {
       default: "={{ $fromAI('since_date', 'Start date for email search (YYYY-MM-DD format)') }}",
       description: 'Direct AI parameter for start date',
       placeholder: '2025-01-01',
-      displayOptions: {
-        show: {
-          interfaceMode: ['ai_simple', 'ai_advanced'],
-        },
-      },
     },
     {
       displayName: 'Before Date (AI Direct)',
@@ -340,11 +293,6 @@ export const getEmailsListOperation: IResourceOperationDef = {
       default: "={{ $fromAI('before_date', 'End date for email search (YYYY-MM-DD format)') }}",
       description: 'Direct AI parameter for end date',
       placeholder: '2025-12-31',
-      displayOptions: {
-        show: {
-          interfaceMode: ['ai_simple', 'ai_advanced'],
-        },
-      },
     },
     {
       displayName: 'Show Unread Only (AI Direct)',
@@ -352,11 +300,6 @@ export const getEmailsListOperation: IResourceOperationDef = {
       type: 'boolean',
       default: false,
       description: 'Whether to show only unread emails',
-      displayOptions: {
-        show: {
-          interfaceMode: ['ai_simple'],
-        },
-      },
     },
     {
       displayName: 'Include Email Content (AI Direct)',
@@ -364,11 +307,6 @@ export const getEmailsListOperation: IResourceOperationDef = {
       type: 'boolean',
       default: true,
       description: 'Whether to include email text content in response',
-      displayOptions: {
-        show: {
-          interfaceMode: ['ai_simple'],
-        },
-      },
     },
     {
       displayName: 'Include All Headers (AI Direct)',
@@ -376,11 +314,6 @@ export const getEmailsListOperation: IResourceOperationDef = {
       type: 'boolean',
       default: false,
       description: 'Whether to include all email headers in the response',
-      displayOptions: {
-        show: {
-          interfaceMode: ['ai_simple', 'ai_advanced'],
-        },
-      },
     },
     {
       displayName: 'Maximum Results (AI Direct)',
@@ -389,11 +322,6 @@ export const getEmailsListOperation: IResourceOperationDef = {
       default: 10,
       description: 'Direct AI parameter for limiting results',
       placeholder: '10',
-      displayOptions: {
-        show: {
-          interfaceMode: ['ai_simple', 'ai_advanced'],
-        },
-      },
       typeOptions: {
         minValue: 1,
         maxValue: 1000,
@@ -405,11 +333,6 @@ export const getEmailsListOperation: IResourceOperationDef = {
       type: 'boolean',
       default: true,
       description: 'Whether to sort emails by newest first (recommended for "latest" or "recent" searches)',
-      displayOptions: {
-        show: {
-          interfaceMode: ['ai_simple'],
-        },
-      },
     }
   ],
   async executeImapAction(context: IExecuteFunctions, itemIndex: number, client: ImapFlow): Promise<INodeExecutionData[] | null> {
