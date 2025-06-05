@@ -26,20 +26,35 @@ export class GetEmailOperation implements IImapOperation {
 			});
 		}
 
-						let message: any;
+										let message: any;
 		try {
-			// Use direct UID-based fetch for better compatibility
-			const messageGenerator = client.fetch(`${emailUid}:${emailUid}`, {
-				source: true,
-				envelope: true,
-				flags: true,
-				uid: true,
-			});
+			// Try the download method first (most reliable for complete emails)
+			try {
+				const downloadResult = await client.download(emailUid, 'FULL', { uid: true });
+				message = {
+					uid: emailUid,
+					source: downloadResult.content,
+					flags: new Set(), // We'll get flags separately if needed
+					size: downloadResult.meta?.expectedSize || 0
+				};
+			} catch (downloadError) {
+				// Fallback to range-based fetch if download fails
+				const messageGenerator = client.fetch(`${emailUid}:${emailUid}`, {
+					source: true,
+					uid: true,
+					flags: true,
+					size: true
+				});
 
-			// Get the first (and only) message from the generator
-			for await (const msg of messageGenerator) {
-				message = msg;
-				break;
+				// Get the first (and only) message from the generator
+				for await (const msg of messageGenerator) {
+					message = msg;
+					break;
+				}
+
+				if (!message) {
+					throw downloadError; // Re-throw original error if fallback also fails
+				}
 			}
 		} catch (error) {
 			throw new NodeApiError(executeFunctions.getNode(), {
