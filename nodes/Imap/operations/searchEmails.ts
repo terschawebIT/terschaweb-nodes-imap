@@ -73,12 +73,19 @@ export class SearchEmailsOperation implements IImapOperation {
 		// Fetch only the metadata for found emails (efficient)
 		for (const uid of limitedResults) {
 			try {
-				const message = await client.fetchOne(uid.toString(), {
+				// Use direct UID-based fetch for better compatibility
+				const messageGenerator = client.fetch(`${uid}:${uid}`, {
 					envelope: true,
 					flags: true,
 					size: true,
 					uid: true,
 				});
+
+				let message: any = null;
+				for await (const msg of messageGenerator) {
+					message = msg;
+					break;
+				}
 
 				if (message) {
 					messages.push({
