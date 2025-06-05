@@ -3,8 +3,8 @@ import {
 	INodeExecutionData,
 	INodeType,
 	INodeTypeDescription,
-	NodeConnectionType,
 	NodeApiError,
+	NodeConnectionType,
 } from 'n8n-workflow';
 
 import { ImapFlow } from 'imapflow';
@@ -104,7 +104,15 @@ export class Imap implements INodeType {
 				description: 'The email folder to work with (e.g., INBOX, Sent, Draft)',
 				displayOptions: {
 					show: {
-						operation: ['listEmails', 'getEmail', 'searchEmails', 'moveEmail', 'markEmail', 'deleteEmail', 'downloadAttachment'],
+						operation: [
+							'listEmails',
+							'getEmail',
+							'searchEmails',
+							'moveEmail',
+							'markEmail',
+							'deleteEmail',
+							'downloadAttachment',
+						],
 					},
 				},
 			},
@@ -252,7 +260,6 @@ export class Imap implements INodeType {
 					} else {
 						returnData.push({ json: result });
 					}
-
 				} catch (error) {
 					if (this.continueOnFail()) {
 						returnData.push({
@@ -264,7 +271,6 @@ export class Imap implements INodeType {
 					}
 				}
 			}
-
 		} finally {
 			// Always close the connection
 			try {

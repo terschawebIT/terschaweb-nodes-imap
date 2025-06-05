@@ -1,13 +1,13 @@
 import { IImapOperation } from '../utils/types';
-import { ListEmailsOperation } from './listEmails';
-import { GetEmailOperation } from './getEmail';
-import { SearchEmailsOperation } from './searchEmails';
-import { MoveEmailOperation } from './moveEmail';
-import { MarkEmailOperation } from './markEmail';
-import { DeleteEmailOperation } from './deleteEmail';
-import { ListMailboxesOperation } from './listMailboxes';
 import { CreateMailboxOperation } from './createMailbox';
+import { DeleteEmailOperation } from './deleteEmail';
 import { DownloadAttachmentOperation } from './downloadAttachment';
+import { GetEmailOperation } from './getEmail';
+import { ListEmailsOperation } from './listEmails';
+import { ListMailboxesOperation } from './listMailboxes';
+import { MarkEmailOperation } from './markEmail';
+import { MoveEmailOperation } from './moveEmail';
+import { SearchEmailsOperation } from './searchEmails';
 
 export class OperationRegistry {
 	private static operations: Map<string, IImapOperation> = new Map([

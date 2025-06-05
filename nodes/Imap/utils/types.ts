@@ -1,5 +1,5 @@
-import { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
 import { ImapFlow } from 'imapflow';
+import { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
 
 export interface IImapOperation {
 	execute(

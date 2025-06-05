@@ -1,7 +1,7 @@
-import { IExecuteFunctions, INodeExecutionData, NodeApiError } from 'n8n-workflow';
 import { ImapFlow } from 'imapflow';
-import { IImapOperation } from '../utils/types';
+import { IExecuteFunctions, INodeExecutionData, NodeApiError } from 'n8n-workflow';
 import { ParameterValidator } from '../utils/helpers';
+import { IImapOperation } from '../utils/types';
 
 export class ListEmailsOperation implements IImapOperation {
 	async execute(
@@ -23,10 +23,10 @@ export class ListEmailsOperation implements IImapOperation {
 			});
 		}
 
-		// Get folder status to know total message count
-		let folderStatus;
-		try {
-			folderStatus = await client.status(mailbox, { messages: true, recent: true, unseen: true });
+		                // Get folder status to know total message count
+                let folderStatus: any;
+                try {
+                        folderStatus = await client.status(mailbox, { messages: true, recent: true, unseen: true });
 		} catch (error) {
 			throw new NodeApiError(executeFunctions.getNode(), {
 				message: `Failed to get folder status: ${(error as Error).message}`,
@@ -36,13 +36,15 @@ export class ListEmailsOperation implements IImapOperation {
 		const totalMessages = folderStatus.messages || 0;
 
 		if (totalMessages === 0) {
-			return [{
-				json: {
-					message: `No emails found in folder: ${mailbox}`,
-					totalMessages: 0,
-					folder: mailbox,
-				}
-			}];
+			return [
+				{
+					json: {
+						message: `No emails found in folder: ${mailbox}`,
+						totalMessages: 0,
+						folder: mailbox,
+					},
+				},
+			];
 		}
 
 		// Calculate range to fetch (newest emails first)
@@ -71,7 +73,7 @@ export class ListEmailsOperation implements IImapOperation {
 						size: message.size,
 						flags: Array.from(message.flags || []),
 						seen: message.flags?.has('\\Seen') || false,
-					}
+					},
 				});
 			}
 
@@ -88,10 +90,9 @@ export class ListEmailsOperation implements IImapOperation {
 						recentMessages: folderStatus.recent || 0,
 						unseenMessages: folderStatus.unseen || 0,
 						fetchRange: fetchRange,
-					}
-				}
+					},
+				},
 			});
-
 		} catch (error) {
 			throw new NodeApiError(executeFunctions.getNode(), {
 				message: `Failed to fetch emails from ${mailbox}: ${(error as Error).message}`,

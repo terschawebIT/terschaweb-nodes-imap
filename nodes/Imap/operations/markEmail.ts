@@ -1,7 +1,7 @@
-import { IExecuteFunctions, NodeApiError } from 'n8n-workflow';
 import { ImapFlow } from 'imapflow';
-import { IImapOperation } from '../utils/types';
+import { IExecuteFunctions, NodeApiError } from 'n8n-workflow';
 import { ParameterValidator } from '../utils/helpers';
+import { IImapOperation } from '../utils/types';
 
 export class MarkEmailOperation implements IImapOperation {
 	async execute(

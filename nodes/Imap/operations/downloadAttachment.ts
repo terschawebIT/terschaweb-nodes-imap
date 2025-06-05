@@ -1,8 +1,8 @@
-import { IExecuteFunctions, NodeApiError } from 'n8n-workflow';
 import { ImapFlow } from 'imapflow';
 import { simpleParser } from 'mailparser';
-import { IImapOperation } from '../utils/types';
+import { IExecuteFunctions, NodeApiError } from 'n8n-workflow';
 import { ParameterValidator } from '../utils/helpers';
+import { IImapOperation } from '../utils/types';
 
 export class DownloadAttachmentOperation implements IImapOperation {
 	async execute(
@@ -12,7 +12,10 @@ export class DownloadAttachmentOperation implements IImapOperation {
 	): Promise<any> {
 		const mailbox = executeFunctions.getNodeParameter('mailbox', itemIndex) as string;
 		const emailUid = executeFunctions.getNodeParameter('emailUid', itemIndex) as string;
-		const attachmentIndex = executeFunctions.getNodeParameter('attachmentIndex', itemIndex) as number;
+		const attachmentIndex = executeFunctions.getNodeParameter(
+			'attachmentIndex',
+			itemIndex,
+		) as number;
 
 		ParameterValidator.validateMailbox(mailbox);
 		ParameterValidator.validateUid(emailUid);
@@ -25,9 +28,9 @@ export class DownloadAttachmentOperation implements IImapOperation {
 			});
 		}
 
-		let message;
-		try {
-			message = await client.fetchOne(emailUid, { source: true });
+		                let message: any;
+                try {
+                        message = await client.fetchOne(emailUid, { source: true });
 		} catch (error) {
 			throw new NodeApiError(executeFunctions.getNode(), {
 				message: `Failed to fetch email with UID ${emailUid}: ${(error as Error).message}`,
@@ -40,9 +43,9 @@ export class DownloadAttachmentOperation implements IImapOperation {
 			});
 		}
 
-		let parsed;
-		try {
-			parsed = await simpleParser(message.source);
+		                let parsed: any;
+                try {
+                        parsed = await simpleParser(message.source);
 		} catch (error) {
 			throw new NodeApiError(executeFunctions.getNode(), {
 				message: `Failed to parse email: ${(error as Error).message}`,

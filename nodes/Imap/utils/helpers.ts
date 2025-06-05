@@ -80,12 +80,12 @@ export class SearchQueryParser {
 
 		// Size-based searches
 		if (trimmedQuery.startsWith('larger:')) {
-			const size = parseInt(query.substring(7).trim());
+			const size = Number.parseInt(query.substring(7).trim());
 			return !isNaN(size) ? { larger: size } : { subject: query };
 		}
 
 		if (trimmedQuery.startsWith('smaller:')) {
-			const size = parseInt(query.substring(8).trim());
+			const size = Number.parseInt(query.substring(8).trim());
 			return !isNaN(size) ? { smaller: size } : { subject: query };
 		}
 
@@ -94,12 +94,17 @@ export class SearchQueryParser {
 	}
 
 	private static parseMultipleCriteria(query: string, operator: 'AND' | 'OR'): any {
-		const separator = operator === 'AND' ?
-			(query.includes(' and ') ? ' and ' : ' & ') :
-			(query.includes(' or ') ? ' or ' : ' | ');
+		const separator =
+			operator === 'AND'
+				? query.includes(' and ')
+					? ' and '
+					: ' & '
+				: query.includes(' or ')
+					? ' or '
+					: ' | ';
 
-		const parts = query.split(separator).map(part => part.trim());
-		const criteria = parts.map(part => this.parse(part));
+		const parts = query.split(separator).map((part) => part.trim());
+		const criteria = parts.map((part) => this.parse(part));
 
 		// Return proper IMAP compound search
 		if (operator === 'AND') {
@@ -125,7 +130,7 @@ export class SearchQueryParser {
 		}
 
 		if (cleanDateStr.endsWith('d') || cleanDateStr.endsWith('days')) {
-			const days = parseInt(cleanDateStr);
+			const days = Number.parseInt(cleanDateStr);
 			if (!isNaN(days)) {
 				const date = new Date();
 				date.setDate(date.getDate() - days);

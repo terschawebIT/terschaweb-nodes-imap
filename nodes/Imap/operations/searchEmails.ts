@@ -1,7 +1,7 @@
-import { IExecuteFunctions, INodeExecutionData, NodeApiError } from 'n8n-workflow';
 import { ImapFlow } from 'imapflow';
-import { IImapOperation } from '../utils/types';
+import { IExecuteFunctions, INodeExecutionData, NodeApiError } from 'n8n-workflow';
 import { ParameterValidator, SearchQueryParser } from '../utils/helpers';
+import { IImapOperation } from '../utils/types';
 
 export class SearchEmailsOperation implements IImapOperation {
 	async execute(
@@ -39,13 +39,15 @@ export class SearchEmailsOperation implements IImapOperation {
 		}
 
 		if (searchResults.length === 0) {
-			return [{
-				json: {
-					message: `No emails found matching criteria: ${searchQuery}`,
-					totalFound: 0,
-					folder: mailbox,
-				}
-			}];
+			return [
+				{
+					json: {
+						message: `No emails found matching criteria: ${searchQuery}`,
+						totalFound: 0,
+						folder: mailbox,
+					},
+				},
+			];
 		}
 
 		// Limit results and sort by UID (newest first)
@@ -77,7 +79,7 @@ export class SearchEmailsOperation implements IImapOperation {
 							// Add search context
 							searchQuery: searchQuery,
 							searchCriteria: searchCriteria,
-						}
+						},
 					});
 				}
 			} catch (error) {
@@ -97,8 +99,8 @@ export class SearchEmailsOperation implements IImapOperation {
 						returned: messages.length - 1, // Exclude this summary
 						folder: mailbox,
 						serverSideSearch: true,
-					}
-				}
+					},
+				},
 			});
 		}
 

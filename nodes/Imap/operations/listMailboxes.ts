@@ -1,5 +1,5 @@
-import { IExecuteFunctions, INodeExecutionData, NodeApiError } from 'n8n-workflow';
 import { ImapFlow } from 'imapflow';
+import { IExecuteFunctions, INodeExecutionData, NodeApiError } from 'n8n-workflow';
 import { IImapOperation } from '../utils/types';
 
 export class ListMailboxesOperation implements IImapOperation {
@@ -11,7 +11,7 @@ export class ListMailboxesOperation implements IImapOperation {
 		try {
 			const mailboxes = await client.list();
 
-			return mailboxes.map(mailbox => ({
+			return mailboxes.map((mailbox) => ({
 				json: {
 					name: mailbox.name,
 					path: mailbox.path,
@@ -20,7 +20,7 @@ export class ListMailboxesOperation implements IImapOperation {
 					subscribed: mailbox.subscribed,
 					hasChildren: mailbox.flags?.has('\\HasChildren') || false,
 					noSelect: mailbox.flags?.has('\\Noselect') || false,
-				}
+				},
 			}));
 		} catch (error) {
 			throw new NodeApiError(executeFunctions.getNode(), {

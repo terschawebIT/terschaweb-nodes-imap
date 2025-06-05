@@ -1,8 +1,8 @@
-import { IExecuteFunctions, NodeApiError } from 'n8n-workflow';
 import { ImapFlow } from 'imapflow';
-import { simpleParser, ParsedMail } from 'mailparser';
-import { IImapOperation, IEmailData } from '../utils/types';
+import { ParsedMail, simpleParser } from 'mailparser';
+import { IExecuteFunctions, NodeApiError } from 'n8n-workflow';
 import { ParameterValidator } from '../utils/helpers';
+import { IEmailData, IImapOperation } from '../utils/types';
 
 export class GetEmailOperation implements IImapOperation {
 	async execute(
@@ -24,9 +24,9 @@ export class GetEmailOperation implements IImapOperation {
 			});
 		}
 
-		let message;
-		try {
-			message = await client.fetchOne(emailUid, {
+		                let message: any;
+                try {
+                        message = await client.fetchOne(emailUid, {
 				source: true,
 				envelope: true,
 				flags: true,
@@ -74,11 +74,12 @@ export class GetEmailOperation implements IImapOperation {
 			date: parsed.date || null,
 			text: parsed.text || '',
 			html: parsed.html || '',
-			attachments: parsed.attachments?.map(att => ({
-				filename: att.filename,
-				contentType: att.contentType,
-				size: att.size,
-			})) || [],
+			attachments:
+				parsed.attachments?.map((att) => ({
+					filename: att.filename,
+					contentType: att.contentType,
+					size: att.size,
+				})) || [],
 			flags: message.flags || new Set(),
 			seen: message.flags?.has('\\Seen') || false,
 			size: message.size,
