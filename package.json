@@ -1,7 +1,7 @@
 {
   "name": "n8n-nodes-imap-ai",
-  "version": "1.1.20",
-  "description": "AI-Agent ready IMAP node for n8n with enhanced $fromAI() integration and AI Tool support. Complete email and mailbox management with intelligent automation capabilities.",
+  "version": "1.1.24",
+  	"description": "Simplified IMAP node for n8n with AI-agent support. Clean and modular email and mailbox management for automation workflows.",
   "keywords": [
     "n8n-community-node-package",
     "imap",
@@ -33,51 +33,40 @@
     "url": "https://github.com/terschawebIT/terschaweb-nodes-imap.git"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=20.11.0"
   },
   "main": "index.js",
   "scripts": {
     "build": "tsc && gulp build:icons",
     "dev": "tsc --watch",
-    "format": "prettier nodes credentials --write",
-    "lint": "eslint nodes credentials package.json",
-    "lintfix": "eslint nodes credentials package.json --fix",
+    "format": "biome format --write nodes credentials package.json",
+    "format:check": "biome format nodes credentials package.json",
+    "lint": "biome check nodes credentials package.json",
+    "lint:fix": "biome check --write nodes credentials package.json",
     "prepublishOnly": "npm run build && npm run lint",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "files": [
-    "dist"
-  ],
-  "n8n": {
-    "n8nNodesApiVersion": 1,
-    "credentials": [
-      "dist/credentials/ImapCredentials.credentials.js"
-    ],
-    "nodes": [
-      "dist/nodes/Imap/Imap.node.js",
-      "dist/nodes/Imap/ImapTool.node.js",
-      "dist/nodes/Imap/ImapToolSimple.node.js",
-      "dist/nodes/EmailSearchAI/EmailSearchAi.node.js"
-    ]
-  },
+  "files": ["dist"],
+  	"n8n": {
+		"n8nNodesApiVersion": 1,
+		"credentials": ["dist/credentials/ImapCredentials.credentials.js"],
+		"nodes": ["dist/nodes/Imap/Imap.node.js"]
+	},
   "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
     "@types/imapflow": "^1.0.19",
-    "@types/mailparser": "^3.4.4",
+    "@types/mailparser": "^3.4.6",
     "@types/nodemailer": "^6.4.17",
-    "@typescript-eslint/parser": "^8.18.2",
-    "eslint": "^8.57.0",
-    "eslint-plugin-n8n-nodes-base": "^1.16.3",
     "gulp": "^5.0.0",
     "n8n-workflow": "^1.82.0",
-    "prettier": "^3.4.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.8.3"
   },
   "peerDependencies": {
     "n8n-workflow": "*"
   },
   "dependencies": {
-    "imapflow": "^1.0.169",
-    "mailparser": "^3.7.1",
-    "nodemailer": "^6.10.0"
+    "imapflow": "^1.0.187",
+    "mailparser": "^3.7.3",
+    "nodemailer": "^6.10.1"
   }
 }

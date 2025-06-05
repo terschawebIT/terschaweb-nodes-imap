@@ -1,193 +1,190 @@
-# 🤖 n8n-nodes-imap-ai
+# Simplified IMAP Node for n8n
 
-**AI-Agent Ready IMAP Node for n8n with Enhanced Automation Capabilities & AI Tool Support**
+A clean, modular IMAP node for n8n that provides essential email management functionality with AI-agent support.
 
-This is an advanced, AI-agent optimized IMAP node for [n8n](https://n8n.io) that provides comprehensive email and mailbox management with intelligent `$fromAI()` integration and full **AI Tool support** for n8n AI Agents.
+## 🎯 Simplified Design
 
-> **🙏 Built upon the excellent foundation of [n8n-nodes-imap](https://github.com/umanamente/n8n-nodes-imap) by [Vasily Maslyukov](https://github.com/umanamente)**
+This project has been **drastically simplified** from the original complex structure to focus on core IMAP functionality:
 
-## 🌟 Features
+- **Single IMAP Node** with all essential operations
+- **Modular Architecture** for easy maintenance and extension
+- **AI-Agent Optimized** with clear, simple parameters
+- **English Interface** for international compatibility
 
-### 🤖 **NEW: AI Tool Support** 
-**Full compatibility with n8n AI Agents as intelligent tools!**
+## 📋 Operations
 
-- ✅ **`usableAsTool: true`** - Automatically available as AI Agent Tool
-- ✅ **`aiEnabled: true`** - Enhanced AI integration 
-- ✅ **Two Node Variants**: 
-  - **IMAP AI**: Classic node with `$fromAI()` support
-  - **IMAP Tool**: Optimized for AI Agent tool usage
-- ✅ **Intelligent Parameter Descriptions**: AI-friendly field explanations for tool usage
-- ✅ **Auto-Discovery**: AI Agents can automatically discover and use IMAP operations
+### Email Operations
+- **List Emails** - Get emails from a mailbox
+- **Get Email** - Retrieve full email content with attachments
+- **Search Emails** - Search emails with simple queries
+- **Move Email** - Move emails between mailboxes
+- **Mark as Read/Unread** - Change email read status
+- **Delete Email** - Mark emails as deleted
 
-### ✅ Complete Email Operations (7 AI-Ready Operations)
-- **EmailGetList**: Intelligent email search with AI-generated queries
-- **EmailSetFlags**: AI-driven flag management with bulk operations
-- **EmailMove**: Smart email organization and routing
-- **EmailDownload**: AI-controlled email archiving with flexible output
-- **EmailCopy**: Intelligent email duplication and backup
-- **EmailDownloadAttachment**: Automatic attachment management
-- **EmailCreateDraft**: AI-based draft creation with intelligent content
+### Mailbox Operations
+- **List Mailboxes** - Get all available mailboxes
+- **Create Mailbox** - Create new mailboxes
 
-### ✅ Complete Mailbox Operations (8 AI-Ready Operations)
-- **MailboxCreate**: Intelligent folder creation with AI parameters
-- **MailboxDelete**: AI-safe deletion with mandatory confirmation
-- **MailboxGetList**: Enhanced folder analysis with statistics
-- **MailboxGetQuota**: Intelligent storage monitoring with analytics
-- **MailboxGetStatus**: Advanced folder monitoring with activity metrics
-- **MailboxRename**: AI-driven folder standardization
-- **MailboxSubscribe**: Intelligent folder visibility management
-- **MailboxMove**: Advanced folder reorganization and hierarchy restructuring
+### Attachment Operations
+- **Download Attachment** - Download email attachments
 
-## 🚀 AI-Agent Integration
+## 🏗️ Modular Structure
 
-### 🔧 Using as AI Tool
-
-AI Agents can automatically discover and use the **IMAP Tool** node for:
-
-- **📧 Automated Email Processing**: AI agents can read, search, and organize emails
-- **🗂️ Intelligent Folder Management**: Create, rename, and organize mailbox folders
-- **🔍 Smart Email Search**: AI-driven email discovery and filtering
-- **📋 Email Analytics**: Get mailbox statistics and quota information
-- **🏷️ Flag Management**: Automatically mark emails as read, important, etc.
-
-**Example AI Agent Usage:**
 ```
-AI Agent: "Check my inbox for urgent emails from the last 24 hours"
-→ Uses IMAP Tool with EmailGetList operation
-→ Automatically applies search criteria and time filters
-→ Returns structured email data for further processing
+nodes/Imap/
+├── Imap.node.ts              # Main node file
+├── imap.svg                  # Node icon
+├── operations/               # Individual operation modules
+│   ├── operationRegistry.ts  # Registry pattern
+│   ├── listEmails.ts
+│   ├── getEmail.ts
+│   ├── searchEmails.ts
+│   ├── moveEmail.ts
+│   ├── markEmail.ts
+│   ├── deleteEmail.ts
+│   ├── listMailboxes.ts
+│   ├── createMailbox.ts
+│   └── downloadAttachment.ts
+└── utils/                    # Shared utilities
+    ├── types.ts              # TypeScript interfaces
+    └── helpers.ts            # Validation & parsing
 ```
 
-### 💡 Traditional $fromAI() Integration
+## 🤖 AI Agent Support
 
-Every operation includes **`$fromAI()` integration** for manual AI-agent automation:
+Each operation provides:
+- **Clear parameter names** (mailbox, emailUid, searchQuery, etc.)
+- **Simple validation** with helpful error messages
+- **Consistent return formats** for easy parsing
+- **Tool support** (`usableAsTool: true`)
 
-```javascript
-// Example: AI-driven email search
-{
-  "searchQuery": "={{ $fromAI('search_query', 'Email search criteria') }}",
-  "mailboxPath": "={{ $fromAI('target_folder', 'Mailbox to search in') }}"
-}
-```
-
-### Enhanced Features for AI Workflows:
-- **Intelligent Parameter Descriptions**: AI-friendly field explanations
-- **Enhanced Metadata**: Rich response data for AI decision-making
-- **Safety Mechanisms**: Confirmation requirements for destructive operations
-- **Bulk Operations**: Efficient mass email processing
-- **Error Handling**: Clear error messages for AI debugging
-
-## 📦 Installation
-
-### Via n8n Community Nodes
-
-1. Open your n8n instance
-2. Go to **Settings** → **Community Nodes**
-3. Install: `n8n-nodes-imap-ai`
-4. Restart n8n
-
-### Via npm
+## 🔧 Installation
 
 ```bash
-npm install n8n-nodes-imap-ai
+npm install
+npm run build
 ```
 
-## 🔧 Configuration
+## 📝 Usage Examples
 
-1. **Create IMAP Credentials**:
-   - Host: Your IMAP server (e.g., `imap.gmail.com`)
-   - Port: Usually `993` for SSL
-   - Username: Your email address
-   - Password: Your email password or app-specific password
-   - SSL: Enable for secure connection
+### List Recent Emails (Performance Optimized)
+- Operation: `List Emails`
+- Folder: `INBOX`
+- Limit: `50`
 
-2. **Use in Workflows**:
-   - Add "IMAP AI" node to your workflow
-   - Select your IMAP credentials
-   - Choose operation (Email or Mailbox)
-   - Configure AI-enhanced parameters
+*Now fetches only the newest emails efficiently instead of downloading all emails*
 
-## 🤖 AI-Agent Examples
+### Server-Side Email Search (NEW!)
+- Operation: `Search Emails`
+- Folder: `INBOX`
+- Search Query Examples:
+  - `from:john` - From anyone with "john" in sender (partial)
+  - `from:@company.com` - From specific domain
+  - `subject:meeting` - Subject containing "meeting"
+  - `unread` - All unread emails
+  - `since:yesterday` - Emails from yesterday onwards
+  - `from:boss and unread` - Complex criteria
 
-### Smart Email Organization
-```javascript
-// AI automatically categorizes and moves emails
-{
-  "operation": "move",
-  "emailIds": "={{ $fromAI('email_ids', 'IDs of emails to organize') }}",
-  "targetFolder": "={{ $fromAI('target_folder', 'Destination folder based on email content') }}"
-}
-```
+*All searches run server-side for maximum performance*
 
-### Intelligent Folder Management
-```javascript
-// AI creates folders based on email patterns
-{
-  "operation": "createMailbox",
-  "mailboxName": "={{ $fromAI('folder_name', 'Folder name based on email categorization') }}",
-  "topLevelMailbox": "={{ $fromAI('is_top_level', 'Whether to create as top-level folder') }}"
-}
-```
+### Get Full Email Content
+- Operation: `Get Email`
+- Folder: `INBOX`
+- Email UID: `12345`
 
-### Automated Cleanup
-```javascript
-// AI identifies and archives old emails
-{
-  "operation": "downloadAndArchive", 
-  "searchCriteria": "={{ $fromAI('cleanup_criteria', 'Criteria for emails to archive') }}",
-  "outputFormat": "eml"
-}
-```
+## 🔍 Advanced Search Features
 
-## 📊 Use Cases
+The server-side search supports sophisticated queries:
 
-- **Email Automation**: Automated email processing and routing
-- **Content Analysis**: AI-driven email categorization and insights
-- **Backup & Archiving**: Intelligent email backup strategies
-- **Cleanup Operations**: Smart mailbox maintenance and organization
-- **Integration Workflows**: Connect email data with other systems
+### Basic Searches
+- `from:john@example.com` - From specific sender (exact email)
+- `from:john` - From anyone with "john" in sender (partial match)
+- `from:@company.com` - From anyone at "company.com" domain
+- `to:me@company.com` - To specific recipient
+- `to:team` - To anyone with "team" in recipient  
+- `subject:meeting` - Subject contains "meeting" (partial match)
+- `body:urgent` - Body contains "urgent" (partial match)
+- `text:project` - Anywhere in email (subject, from, body)
 
-## 🛡️ Security Features
+### Flag-Based Searches
+- `unread` or `unseen` - Unread emails
+- `read` or `seen` - Read emails
+- `flagged` or `important` - Flagged/important emails
+- `answered` or `replied` - Emails that have been replied to
 
-- **Safe Deletion**: Mandatory confirmation for destructive operations
-- **Credential Protection**: Secure IMAP authentication
-- **Error Handling**: Comprehensive error reporting
-- **Audit Trail**: Enhanced logging for operations
+### Date-Based Searches  
+- `since:today` - Today's emails
+- `since:yesterday` - Since yesterday
+- `since:7d` - Last 7 days
+- `before:2024-01-01` - Before specific date
 
-## 🙏 Acknowledgments
+### Size-Based Searches
+- `larger:1000000` - Emails larger than 1MB
+- `smaller:50000` - Emails smaller than 50KB
 
-This project is built upon the excellent foundation of the original [n8n-nodes-imap](https://github.com/umanamente/n8n-nodes-imap) by **Vasily Maslyukov**. 
+### Complex Queries
+- `from:boss and unread` - Multiple criteria
+- `subject:urgent or flagged` - Alternative criteria
 
-### What's New in the AI-Enhanced Version:
-- ✅ Complete `$fromAI()` integration across all 15 operations
-- ✅ 2 new mailbox operations (MailboxSubscribe, MailboxMove)
-- ✅ Enhanced metadata for AI decision-making
-- ✅ Improved safety mechanisms and error handling
-- ✅ AI-friendly parameter descriptions and placeholders
-- ✅ Modular architecture with shared utilities
+### 💡 Practical Examples
+- `from:noreply` - All automated emails
+- `from:@github.com` - All GitHub notifications  
+- `subject:invoice` - All invoices
+- `from:team and since:today` - Today's team emails
+- `subject:meeting and unread` - Unread meeting emails
+- `from:@company.com and larger:1000000` - Large emails from company
 
-### Original Project:
-- **Original Author**: [Vasily Maslyukov](https://github.com/umanamente)
-- **Original Repository**: [n8n-nodes-imap](https://github.com/umanamente/n8n-nodes-imap)
-- **Original npm Package**: [n8n-nodes-imap](https://www.npmjs.com/package/n8n-nodes-imap)
+*All searches run on the IMAP server for maximum performance*
 
-## 🔗 Links
+## 🔐 Credentials
 
-- **This Repository**: [GitHub](https://github.com/terschawebIT/terschaweb-nodes-imap)
-- **npm Package**: [n8n-nodes-imap-ai](https://www.npmjs.com/package/n8n-nodes-imap-ai)
-- **Original Project**: [n8n-nodes-imap](https://github.com/umanamente/n8n-nodes-imap)
-- **Author**: [Niko Terschawetz](https://terschaweb.de)
+Uses standard IMAP credentials:
+- Host (e.g., `imap.gmail.com`)
+- Port (e.g., `993`)
+- Username/Email
+- Password
+- Secure (SSL/TLS)
 
-## 📝 License
+## 🎨 Key Improvements
 
-MIT License - See [LICENSE](LICENSE) file for details.
+✅ **Drastically simplified** from complex multi-node structure  
+✅ **Modular operations** for easy maintenance  
+✅ **AI-agent optimized** parameters  
+✅ **Single interface** per operation  
+✅ **Clean error handling** with validation  
+✅ **English-only** interface  
+✅ **Registry pattern** for operation management  
+✅ **Performance optimized** - server-side search & efficient email fetching  
+✅ **Folder terminology** instead of technical "mailbox" terms  
+
+## 🔄 Migration from Complex Version
+
+This version removes:
+- ❌ Multiple interface modes
+- ❌ Redundant AI-specific nodes
+- ❌ Complex parameter structures
+- ❌ German language mixing
+
+And adds:
+- ✅ Simple, direct operations
+- ✅ Modular code structure
+- ✅ Better error handling
+- ✅ Cleaner AI integration
+
+## 📚 Development
+
+To add new operations:
+
+1. Create operation class in `operations/[operationName].ts`
+2. Implement `IImapOperation` interface
+3. Register in `operationRegistry.ts`
+4. Add UI parameters to main node file
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit issues and pull requests.
-
----
-
-**Made with ❤️ for the n8n and AI automation community**  
-**Special thanks to Vasily Maslyukov for the original foundation! 🙏**
+This simplified structure makes contributions much easier:
+- Each operation is isolated
+- Clear interfaces and types
+- Consistent error handling patterns
+- Simple registry for new operations
 

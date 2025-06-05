@@ -3,16 +3,19 @@
 
 module.exports = {
   description: {
-    displayName: 'IMAP AI Nodes',
+    displayName: 'IMAP AI',
     name: 'n8n-nodes-imap-ai',
-    description: 'AI-Agent ready IMAP nodes for n8n with enhanced email management capabilities',
-    version: '1.1.20',
-    nodes: [
-      'dist/nodes/Imap/Imap.node.js',
-      'dist/nodes/EmailSearchAI/EmailSearchAi.node.js'
-    ],
+    version: '1.1.24',
+    description: 'AI-Agent ready IMAP node for n8n with enhanced $fromAI() integration and AI Tool support. Complete email and mailbox management with intelligent automation capabilities.',
+    author: 'Niko Terschawetz <niko.terschawetz@terschaweb.de>',
+    homepage: 'https://github.com/terschawebIT/terschaweb-nodes-imap',
+    license: 'MIT',
     credentials: [
       'dist/credentials/ImapCredentials.credentials.js'
+    ],
+    nodes: [
+      'dist/nodes/Imap/Imap.node.js',
+      'dist/nodes/EmailSearchAI/EmailSearchAI.node.js'
     ]
   }
 };
