@@ -75,33 +75,37 @@ export class SearchEmailsOperation implements IImapOperation {
 
 		const messages: INodeExecutionData[] = [];
 
-		// Use bulk FETCH instead of individual FETCH operations (fixes ImapFlow iterator issue)
+		// Use range-based UID FETCH for each UID (matches working v2.1.2 approach)
 		if (limitedResults.length > 0) {
 			try {
-				// Create comma-separated UID list for bulk fetch
-				const uidList = limitedResults.join(',');
-				console.log(`Bulk fetching metadata for ${limitedResults.length} UIDs: ${uidList}`);
+				console.log(`Fetching metadata for ${limitedResults.length} UIDs using range syntax`);
 
-				// Use bulk UID FETCH - more reliable than individual fetches
-				const messageGenerator = client.fetch(uidList, {
-					envelope: true,
-					flags: true,
-					size: true,
-					uid: true,
-				}, { uid: true });
+				// Process each UID individually using range syntax (uid:uid)
+				for (const uid of limitedResults) {
+					console.log(`Fetching email metadata for UID: ${uid} using range ${uid}:${uid}`);
 
-				let messageCount = 0;
-				for await (const message of messageGenerator) {
-					messageCount++;
-					console.log(`Bulk fetch message ${messageCount} received for UID ${message.uid}:`, {
-						hasEnvelope: !!message.envelope,
-						hasFlags: !!message.flags,
-						hasSize: !!message.size,
-						uid: message.uid
-					});
+					// Use range-based UID FETCH syntax that worked in v2.1.2
+					const messageGenerator = client.fetch(`${uid}:${uid}`, {
+						envelope: true,
+						flags: true,
+						size: true,
+						uid: true,
+					}, { uid: true });
+
+					let message: any = null;
+					for await (const msg of messageGenerator) {
+						console.log(`Range fetch message received for UID ${uid}:`, {
+							hasEnvelope: !!msg.envelope,
+							hasFlags: !!msg.flags,
+							hasSize: !!msg.size,
+							uid: msg.uid
+						});
+						message = msg;
+						break; // Only get first message from range
+					}
 
 					if (message && message.envelope) {
-						console.log(`Processing email UID ${message.uid}:`, {
+						console.log(`Processing email UID ${uid}:`, {
 							subject: message.envelope.subject,
 							from: message.envelope.from?.[0]?.address || 'unknown'
 						});
@@ -122,7 +126,7 @@ export class SearchEmailsOperation implements IImapOperation {
 							},
 						});
 					} else {
-						console.warn(`No valid message data for UID ${message.uid}:`, {
+						console.warn(`No valid message data for UID ${uid}:`, {
 							hasMessage: !!message,
 							hasEnvelope: message?.envelope ? true : false,
 							messageKeys: message ? Object.keys(message) : 'none'
@@ -130,9 +134,9 @@ export class SearchEmailsOperation implements IImapOperation {
 					}
 				}
 
-				console.log(`Bulk fetch completed. Expected ${limitedResults.length} messages, received ${messageCount} messages`);
+				console.log(`Range fetch completed. Expected ${limitedResults.length} messages, returned ${messages.length} messages`);
 			} catch (error) {
-				console.error(`Bulk fetch failed:`, {
+				console.error(`Range fetch failed:`, {
 					error: (error as Error).message,
 					stack: (error as Error).stack,
 					uidCount: limitedResults.length
