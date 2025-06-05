@@ -78,6 +78,8 @@ export class SearchEmailsOperation implements IImapOperation {
 		// Fetch only the metadata for found emails (efficient)
 		for (const uid of limitedResults) {
 			try {
+				console.log(`Fetching email metadata for UID: ${uid}`);
+
 				// Use basic UID FETCH without range syntax
 				const messageGenerator = client.fetch(uid.toString(), {
 					envelope: true,
@@ -87,12 +89,28 @@ export class SearchEmailsOperation implements IImapOperation {
 				}, { uid: true });
 
 				let message: any = null;
+				let messageCount = 0;
+
 				for await (const msg of messageGenerator) {
+					messageCount++;
+					console.log(`Message ${messageCount} received for UID ${uid}:`, {
+						hasEnvelope: !!msg.envelope,
+						hasFlags: !!msg.flags,
+						hasSize: !!msg.size,
+						uid: msg.uid
+					});
 					message = msg;
-					break;
+					// Don't break - process all messages in case there are multiple chunks
 				}
 
-				if (message) {
+				console.log(`Total messages received for UID ${uid}: ${messageCount}`);
+
+				if (message && message.envelope) {
+					console.log(`Processing email UID ${uid}:`, {
+						subject: message.envelope.subject,
+						from: message.envelope.from?.[0]?.address || 'unknown'
+					});
+
 					messages.push({
 						json: {
 							uid: message.uid,
@@ -108,28 +126,54 @@ export class SearchEmailsOperation implements IImapOperation {
 							searchCriteria: searchCriteria,
 						},
 					});
+				} else {
+					console.warn(`No valid message data for UID ${uid}:`, {
+						hasMessage: !!message,
+						hasEnvelope: message?.envelope ? true : false,
+						messageKeys: message ? Object.keys(message) : 'none'
+					});
 				}
 			} catch (error) {
 				// Log but continue with other emails
-				console.warn(`Failed to fetch email UID ${uid}: ${(error as Error).message}`);
+				console.error(`Failed to fetch email UID ${uid}:`, {
+					error: (error as Error).message,
+					stack: (error as Error).stack
+				});
 				continue;
 			}
 		}
 
-		// Add summary information
-		if (messages.length > 0) {
-			messages.unshift({
+		console.log(`Search completed. Found ${searchResults.length} emails, processed ${limitedResults.length}, returned ${messages.length} messages`);
+
+		// Return results even if no emails found, but include summary
+		if (searchResults.length > 0) {
+			// Add summary information at the beginning
+			const summaryData = {
 				json: {
 					searchSummary: {
 						query: searchDisplayText,
 						totalFound: searchResults.length,
-						returned: messages.length - 1, // Exclude this summary
+						returned: messages.length,
 						folder: mailbox,
 						serverSideSearch: true,
 						searchMode: searchMode,
 					},
 				},
-			});
+			};
+			messages.unshift(summaryData);
+		} else {
+			// Return a message indicating no results found
+			return [
+				{
+					json: {
+						message: `No emails found matching criteria: ${searchDisplayText}`,
+						totalFound: 0,
+						folder: mailbox,
+						searchQuery: searchDisplayText,
+						searchMode: searchMode,
+					},
+				},
+			];
 		}
 
 		return messages;
