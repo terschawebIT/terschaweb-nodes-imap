@@ -57,109 +57,9 @@ export class SearchEmailsOperation implements IImapOperation {
 			});
 		}
 
+		console.log(`Server-side search completed. Found ${searchResults.length} UIDs matching criteria`);
+
 		if (searchResults.length === 0) {
-			return [
-				{
-					json: {
-						message: `No emails found matching criteria: ${searchDisplayText}`,
-						totalFound: 0,
-						folder: mailbox,
-					},
-				},
-			];
-		}
-
-		// Limit results and sort by UID (newest first)
-		const sortedResults = searchResults.sort((a, b) => b - a);
-		const limitedResults = sortedResults.slice(0, validatedLimit);
-
-		const messages: INodeExecutionData[] = [];
-
-				// Use sequence-based FETCH like listEmails (most reliable approach)
-		if (limitedResults.length > 0) {
-			try {
-				console.log(`Converting ${limitedResults.length} UIDs to sequence numbers for reliable FETCH`);
-
-				// Get mailbox status to know current message count
-				const folderStatus = await client.status(mailbox, { messages: true });
-				const totalMessages = folderStatus.messages || 0;
-
-				if (totalMessages === 0) {
-					console.log('No messages in mailbox');
-					return [{
-						json: {
-							message: `No emails found in folder: ${mailbox}`,
-							totalMessages: 0,
-							folder: mailbox,
-						},
-					}];
-				}
-
-				// Fetch all current messages to map UIDs to sequence numbers
-				console.log(`Mapping UIDs to sequence numbers for ${totalMessages} total messages`);
-				const uidToSeqMap = new Map<number, number>();
-
-				// Use a small range fetch to get UID mapping efficiently
-				const mappingGenerator = client.fetch(`1:${totalMessages}`, {
-					uid: true,
-				});
-
-				for await (const msg of mappingGenerator) {
-					if (msg.uid && msg.seq) {
-						uidToSeqMap.set(msg.uid, msg.seq);
-					}
-				}
-
-				console.log(`Built UID-to-sequence mapping for ${uidToSeqMap.size} messages`);
-
-								// Return only UIDs that exist in current mailbox
-				const validUIDs: number[] = [];
-				for (const uid of limitedResults) {
-					const sequenceNumber = uidToSeqMap.get(uid);
-
-					if (sequenceNumber) {
-						validUIDs.push(uid);
-						console.log(`Found valid UID ${uid} at sequence ${sequenceNumber}`);
-					} else {
-						console.warn(`UID ${uid} not found in current mailbox (may have been deleted/moved)`);
-					}
-				}
-
-				console.log(`Search completed. Found ${searchResults.length} total matches, returning ${validUIDs.length} valid UIDs`);
-
-				// Return UIDs for use with getEmail operation
-				messages.push({
-					json: {
-						searchSummary: {
-							totalFound: searchResults.length,
-							returned: validUIDs.length,
-							query: searchDisplayText,
-							criteria: searchCriteria,
-							folder: mailbox,
-						},
-						uids: validUIDs, // Array of UIDs for getEmail operation
-						// Convenience: return first UID separately
-						firstUID: validUIDs.length > 0 ? validUIDs[0] : null,
-					},
-				});
-			} catch (error) {
-				console.error(`Sequence-based fetch failed:`, {
-					error: (error as Error).message,
-					stack: (error as Error).stack,
-					uidCount: limitedResults.length
-				});
-
-				// Fallback: No individual retries to avoid the same problem
-				throw new NodeApiError(executeFunctions.getNode(), {
-					message: `Failed to fetch email data: ${(error as Error).message}`,
-				});
-			}
-		}
-
-		console.log(`Search completed. Found ${searchResults.length} emails, processed ${limitedResults.length}, returned ${messages.length} messages`);
-
-		// If no results found, return empty UID array
-		if (messages.length === 0) {
 			return [
 				{
 					json: {
@@ -170,14 +70,37 @@ export class SearchEmailsOperation implements IImapOperation {
 							criteria: searchCriteria,
 							folder: mailbox,
 						},
-						uids: [], // Empty array when no results
+						uids: [],
 						firstUID: null,
 					},
 				},
 			];
 		}
 
-		return messages;
+		// Limit results and sort by UID (newest first)
+		const sortedResults = searchResults.sort((a, b) => b - a);
+		const limitedResults = sortedResults.slice(0, validatedLimit);
+
+		console.log(`Returning ${limitedResults.length} UIDs (limited from ${searchResults.length} found)`);
+
+		// Return UIDs directly - no client-side validation needed
+		// The SEARCH command already returns valid UIDs from the current mailbox state
+		const result = {
+			json: {
+				searchSummary: {
+					totalFound: searchResults.length,
+					returned: limitedResults.length,
+					query: searchDisplayText,
+					criteria: searchCriteria,
+					folder: mailbox,
+				},
+				uids: limitedResults, // Array of UIDs for getEmail operation
+				// Convenience: return first UID separately
+				firstUID: limitedResults.length > 0 ? limitedResults[0] : null,
+			},
+		};
+
+		return [result];
 	}
 
 	private buildSimpleSearchCriteria(quickFilter: string, searchText: string): any {
@@ -200,19 +123,41 @@ export class SearchEmailsOperation implements IImapOperation {
 				weekStart.setHours(0, 0, 0, 0);
 				criteria.since = weekStart;
 				break;
+			case 'thisMonth':
+				const monthStart = new Date();
+				monthStart.setDate(1);
+				monthStart.setHours(0, 0, 0, 0);
+				criteria.since = monthStart;
+				break;
+			case 'flagged':
+				criteria.flagged = true;
+				break;
 			case 'all':
 			default:
-				// No additional criteria
+				// No additional criteria for 'all'
 				break;
 		}
 
 		// Apply text search if provided
 		if (searchText && searchText.trim()) {
-			criteria.or = [
-				{ subject: searchText.trim() },
-				{ from: searchText.trim() },
-				{ body: searchText.trim() },
-			];
+			// Search in subject, from, to, and body
+			const text = searchText.trim();
+
+			// Check if it looks like an email address
+			if (text.includes('@')) {
+				criteria.or = [
+					{ from: text },
+					{ to: text },
+					{ cc: text },
+				];
+			} else {
+				// General text search in multiple fields
+				criteria.or = [
+					{ subject: text },
+					{ from: text },
+					{ body: text },
+				];
+			}
 		}
 
 		return criteria;
@@ -223,25 +168,35 @@ export class SearchEmailsOperation implements IImapOperation {
 
 		switch (quickFilter) {
 			case 'unseen':
-				parts.push('Unread emails');
+				parts.push('unread emails');
 				break;
 			case 'seen':
-				parts.push('Read emails');
+				parts.push('read emails');
 				break;
 			case 'today':
-				parts.push('Today\'s emails');
+				parts.push('emails from today');
 				break;
 			case 'thisWeek':
-				parts.push('This week\'s emails');
+				parts.push('emails from this week');
+				break;
+			case 'thisMonth':
+				parts.push('emails from this month');
+				break;
+			case 'flagged':
+				parts.push('flagged emails');
 				break;
 			case 'all':
 			default:
-				parts.push('All emails');
+				parts.push('all emails');
 				break;
 		}
 
 		if (searchText && searchText.trim()) {
-			parts.push(`containing "${searchText.trim()}"`);
+			if (searchText.includes('@')) {
+				parts.push(`from/to: ${searchText}`);
+			} else {
+				parts.push(`containing: ${searchText}`);
+			}
 		}
 
 		return parts.join(' ');
@@ -251,103 +206,72 @@ export class SearchEmailsOperation implements IImapOperation {
 		const criteria: any = {};
 		const displayParts: string[] = [];
 
-		// From filter
-		if (advancedCriteria.from) {
-			criteria.from = advancedCriteria.from;
-			displayParts.push(`from: ${advancedCriteria.from}`);
-		}
-
-		// To filter
-		if (advancedCriteria.to) {
-			criteria.to = advancedCriteria.to;
-			displayParts.push(`to: ${advancedCriteria.to}`);
-		}
-
-		// Subject filter
+		// Subject
 		if (advancedCriteria.subject) {
 			criteria.subject = advancedCriteria.subject;
 			displayParts.push(`subject: ${advancedCriteria.subject}`);
 		}
 
-		// Body filter
+		// From
+		if (advancedCriteria.from) {
+			criteria.from = advancedCriteria.from;
+			displayParts.push(`from: ${advancedCriteria.from}`);
+		}
+
+		// To
+		if (advancedCriteria.to) {
+			criteria.to = advancedCriteria.to;
+			displayParts.push(`to: ${advancedCriteria.to}`);
+		}
+
+		// Body
 		if (advancedCriteria.body) {
 			criteria.body = advancedCriteria.body;
 			displayParts.push(`body: ${advancedCriteria.body}`);
 		}
 
-		// Read status filter
-		if (advancedCriteria.readStatus) {
-			switch (advancedCriteria.readStatus) {
-				case 'unread':
-					criteria.unseen = true;
-					displayParts.push('unread');
-					break;
-				case 'read':
-					criteria.seen = true;
-					displayParts.push('read');
-					break;
-				case 'any':
-				default:
-					// No filter
-					break;
+		// Flags
+		if (advancedCriteria.seen !== undefined) {
+			if (advancedCriteria.seen) {
+				criteria.seen = true;
+				displayParts.push('read');
+			} else {
+				criteria.unseen = true;
+				displayParts.push('unread');
 			}
+		}
+
+		if (advancedCriteria.flagged) {
+			criteria.flagged = true;
+			displayParts.push('flagged');
 		}
 
 		// Date filters
 		this.applyDateFilters(criteria, advancedCriteria, displayParts);
 
-		// Size filters
-		if (advancedCriteria.sizeFilter?.size) {
-			const sizeFilter = advancedCriteria.sizeFilter.size;
-			const sizeBytes = sizeFilter.sizeKB * 1024;
-
-			if (sizeFilter.condition === 'larger') {
-				criteria.larger = sizeBytes;
-				displayParts.push(`larger than ${sizeFilter.sizeKB}KB`);
-			} else {
-				criteria.smaller = sizeBytes;
-				displayParts.push(`smaller than ${sizeFilter.sizeKB}KB`);
-			}
-		}
-
-		// Attachment filter (Note: IMAP doesn't have direct attachment search,
-		// so we'll use a workaround with content-type)
-		if (advancedCriteria.hasAttachments === 'yes') {
-			criteria.header = ['content-type', 'multipart/mixed'];
-			displayParts.push('with attachments');
-		}
-
-		const display = displayParts.length > 0 ? displayParts.join(', ') : 'all emails';
-
-		return { criteria, display };
+		return {
+			criteria,
+			display: displayParts.length > 0 ? displayParts.join(', ') : 'all emails',
+		};
 	}
 
 	private applyDateFilters(criteria: any, advancedCriteria: any, displayParts: string[]): void {
-		// Quick date filter takes precedence
+		// Quick date filter
 		if (advancedCriteria.quickDate && advancedCriteria.quickDate !== 'none') {
 			const dateRange = this.getQuickDateRange(advancedCriteria.quickDate);
-			if (dateRange.since) {
-				criteria.since = dateRange.since;
-				displayParts.push(`since ${dateRange.since.toLocaleDateString()}`);
-			}
-			if (dateRange.before) {
-				criteria.before = dateRange.before;
-				displayParts.push(`before ${dateRange.before.toLocaleDateString()}`);
-			}
-			return;
+			Object.assign(criteria, dateRange);
+			displayParts.push(`date: ${advancedCriteria.quickDate}`);
 		}
 
 		// Custom date range
-		if (advancedCriteria.dateRange?.range) {
-			const range = advancedCriteria.dateRange.range;
-			if (range.from) {
-				criteria.since = new Date(range.from);
-				displayParts.push(`since ${new Date(range.from).toLocaleDateString()}`);
-			}
-			if (range.to) {
-				criteria.before = new Date(range.to);
-				displayParts.push(`before ${new Date(range.to).toLocaleDateString()}`);
-			}
+		if (advancedCriteria.dateFrom) {
+			criteria.since = new Date(advancedCriteria.dateFrom);
+			displayParts.push(`since: ${advancedCriteria.dateFrom}`);
+		}
+
+		if (advancedCriteria.dateTo) {
+			criteria.before = new Date(advancedCriteria.dateTo);
+			displayParts.push(`before: ${advancedCriteria.dateTo}`);
 		}
 	}
 
@@ -356,8 +280,6 @@ export class SearchEmailsOperation implements IImapOperation {
 		const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
 		switch (quickDate) {
-			case 'lastHour':
-				return { since: new Date(now.getTime() - 60 * 60 * 1000) };
 			case 'today':
 				return { since: today };
 			case 'yesterday':
@@ -366,19 +288,20 @@ export class SearchEmailsOperation implements IImapOperation {
 				return { since: yesterday, before: today };
 			case 'thisWeek':
 				const weekStart = new Date(today);
-				weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+				weekStart.setDate(today.getDate() - today.getDay());
 				return { since: weekStart };
 			case 'lastWeek':
 				const lastWeekEnd = new Date(today);
-				lastWeekEnd.setDate(lastWeekEnd.getDate() - lastWeekEnd.getDay());
+				lastWeekEnd.setDate(today.getDate() - today.getDay());
 				const lastWeekStart = new Date(lastWeekEnd);
-				lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+				lastWeekStart.setDate(lastWeekEnd.getDate() - 7);
 				return { since: lastWeekStart, before: lastWeekEnd };
 			case 'thisMonth':
-				return { since: new Date(now.getFullYear(), now.getMonth(), 1) };
+				const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+				return { since: monthStart };
 			case 'lastMonth':
-				const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-				const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 1);
+				const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+				const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 1);
 				return { since: lastMonthStart, before: lastMonthEnd };
 			default:
 				return {};
