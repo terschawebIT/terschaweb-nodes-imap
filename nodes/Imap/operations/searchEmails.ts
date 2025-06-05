@@ -50,7 +50,7 @@ export class SearchEmailsOperation implements IImapOperation {
 
 		try {
 			// Use IMAP SEARCH command for server-side filtering
-			searchResults = await client.search(searchCriteria);
+			searchResults = await client.search(searchCriteria, { uid: true });
 		} catch (error) {
 			throw new NodeApiError(executeFunctions.getNode(), {
 				message: `Server-side search failed: ${(error as Error).message}. Query: ${searchDisplayText}`,
@@ -81,50 +81,38 @@ export class SearchEmailsOperation implements IImapOperation {
 		const sortedResults = searchResults.sort((a, b) => b - a);
 		const limitedResults = sortedResults.slice(0, validatedLimit);
 
-		console.log(`Returning ${limitedResults.length} UIDs (limited from ${searchResults.length} found)`);
+		console.log(`Validating ${limitedResults.length} UIDs from server-side search...`);
 
-		// Get the actual UIDs of the found emails by fetching them
-		// This ensures we have the correct UIDs, not sequence numbers or stale data
-		let actualUIDs: number[] = [];
+		// Fast validation: Check if the found UIDs still exist
+		// Only validate the limited results, not all search results
+		let validUIDs: number[] = [];
 
 		try {
-			console.log(`Fetching actual UIDs for ${limitedResults.length} found emails...`);
-
-			// Use FETCH to get the actual UIDs of the found messages
-			for (const result of limitedResults) {
-				try {
-					// Fetch by sequence number or UID to get the actual UID
-					const messageGenerator = client.fetch(result.toString(), {
-						uid: true,
-					}, { uid: true });
-
-					for await (const msg of messageGenerator) {
-						if (msg.uid) {
-							actualUIDs.push(msg.uid);
-							console.log(`Found actual UID: ${msg.uid} for search result: ${result}`);
-						}
-						break; // Only need the first message
-					}
-				} catch (error) {
-					console.warn(`Failed to get UID for search result ${result}:`, error);
-					continue;
+			for (const uid of limitedResults) {
+				// Quick existence check using UID SEARCH
+				const exists = await client.search({ uid: uid.toString() });
+				if (exists.length > 0) {
+					validUIDs.push(uid);
+					console.log(`UID ${uid} exists and is valid`);
+				} else {
+					console.log(`UID ${uid} no longer exists, skipping`);
 				}
+
+				// If we have enough valid UIDs, stop
+				if (validUIDs.length >= validatedLimit) break;
 			}
 
-			console.log(`Got ${actualUIDs.length} actual UIDs from ${limitedResults.length} search results`);
-
-			// Sort UIDs by newest first
-			actualUIDs.sort((a, b) => b - a);
+			console.log(`Found ${validUIDs.length} valid UIDs from ${limitedResults.length} search results`);
 
 		} catch (error) {
-			console.error('Failed to fetch actual UIDs:', error);
+			console.error('UID validation failed:', error);
 			throw new NodeApiError(executeFunctions.getNode(), {
-				message: `Failed to get email UIDs: ${(error as Error).message}`,
+				message: `Failed to validate email UIDs: ${(error as Error).message}`,
 			});
 		}
 
 		// If no valid UIDs found, return empty result
-		if (actualUIDs.length === 0) {
+		if (validUIDs.length === 0) {
 			return [
 				{
 					json: {
@@ -134,7 +122,7 @@ export class SearchEmailsOperation implements IImapOperation {
 							query: searchDisplayText,
 							criteria: searchCriteria,
 							folder: mailbox,
-							note: "No valid emails found matching criteria",
+							note: "Search found emails but none exist in current mailbox state",
 						},
 						uids: [],
 						firstUID: null,
@@ -146,15 +134,15 @@ export class SearchEmailsOperation implements IImapOperation {
 		const result = {
 			json: {
 				searchSummary: {
-					totalFound: searchResults.length,
-					returned: actualUIDs.length,
+					totalFound: searchResults.length, // Original server-side search count
+					returned: validUIDs.length,
 					query: searchDisplayText,
 					criteria: searchCriteria,
 					folder: mailbox,
 				},
-				uids: actualUIDs, // Actual UIDs from FETCH operation
+				uids: validUIDs, // Only validated, existing UIDs
 				// Convenience: return first UID separately
-				firstUID: actualUIDs.length > 0 ? actualUIDs[0] : null,
+				firstUID: validUIDs.length > 0 ? validUIDs[0] : null,
 			},
 		};
 
