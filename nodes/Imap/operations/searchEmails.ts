@@ -112,70 +112,36 @@ export class SearchEmailsOperation implements IImapOperation {
 
 				console.log(`Built UID-to-sequence mapping for ${uidToSeqMap.size} messages`);
 
-				// Process each UID by converting to sequence number
+								// Return only UIDs that exist in current mailbox
+				const validUIDs: number[] = [];
 				for (const uid of limitedResults) {
 					const sequenceNumber = uidToSeqMap.get(uid);
 
-					if (!sequenceNumber) {
-						console.warn(`UID ${uid} not found in current mailbox (may have been deleted/moved)`);
-						continue;
-					}
-
-					console.log(`Fetching email for UID ${uid} using sequence number ${sequenceNumber}`);
-
-					// Use sequence-based FETCH (like listEmails - most reliable)
-					const messageGenerator = client.fetch(sequenceNumber.toString(), {
-						envelope: true,
-						flags: true,
-						size: true,
-						uid: true,
-					});
-
-					let message: any = null;
-					for await (const msg of messageGenerator) {
-						console.log(`Sequence fetch message received for UID ${uid} (seq ${sequenceNumber}):`, {
-							hasEnvelope: !!msg.envelope,
-							hasFlags: !!msg.flags,
-							hasSize: !!msg.size,
-							uid: msg.uid,
-							seq: msg.seq
-						});
-						message = msg;
-						break; // Only get first message
-					}
-
-					if (message && message.envelope) {
-						console.log(`Processing email UID ${uid} (seq ${sequenceNumber}):`, {
-							subject: message.envelope.subject,
-							from: message.envelope.from?.[0]?.address || 'unknown'
-						});
-
-						messages.push({
-							json: {
-								uid: message.uid,
-								sequence: message.seq,
-								subject: message.envelope?.subject || '',
-								from: message.envelope?.from?.[0] || {},
-								to: message.envelope?.to || [],
-								date: message.envelope?.date || null,
-								size: message.size,
-								flags: Array.from(message.flags || []),
-								seen: message.flags?.has('\\Seen') || false,
-								// Add search context
-								searchQuery: searchDisplayText,
-								searchCriteria: searchCriteria,
-							},
-						});
+					if (sequenceNumber) {
+						validUIDs.push(uid);
+						console.log(`Found valid UID ${uid} at sequence ${sequenceNumber}`);
 					} else {
-						console.warn(`No valid message data for UID ${uid} (seq ${sequenceNumber}):`, {
-							hasMessage: !!message,
-							hasEnvelope: message?.envelope ? true : false,
-							messageKeys: message ? Object.keys(message) : 'none'
-						});
+						console.warn(`UID ${uid} not found in current mailbox (may have been deleted/moved)`);
 					}
 				}
 
-				console.log(`Sequence-based fetch completed. Expected ${limitedResults.length} messages, returned ${messages.length} messages`);
+				console.log(`Search completed. Found ${searchResults.length} total matches, returning ${validUIDs.length} valid UIDs`);
+
+				// Return UIDs for use with getEmail operation
+				messages.push({
+					json: {
+						searchSummary: {
+							totalFound: searchResults.length,
+							returned: validUIDs.length,
+							query: searchDisplayText,
+							criteria: searchCriteria,
+							folder: mailbox,
+						},
+						uids: validUIDs, // Array of UIDs for getEmail operation
+						// Convenience: return first UID separately
+						firstUID: validUIDs.length > 0 ? validUIDs[0] : null,
+					},
+				});
 			} catch (error) {
 				console.error(`Sequence-based fetch failed:`, {
 					error: (error as Error).message,
@@ -192,32 +158,20 @@ export class SearchEmailsOperation implements IImapOperation {
 
 		console.log(`Search completed. Found ${searchResults.length} emails, processed ${limitedResults.length}, returned ${messages.length} messages`);
 
-		// Return results even if no emails found, but include summary
-		if (searchResults.length > 0) {
-			// Add summary information at the beginning
-			const summaryData = {
-				json: {
-					searchSummary: {
-						query: searchDisplayText,
-						totalFound: searchResults.length,
-						returned: messages.length,
-						folder: mailbox,
-						serverSideSearch: true,
-						searchMode: searchMode,
-					},
-				},
-			};
-			messages.unshift(summaryData);
-		} else {
-			// Return a message indicating no results found
+		// If no results found, return empty UID array
+		if (messages.length === 0) {
 			return [
 				{
 					json: {
-						message: `No emails found matching criteria: ${searchDisplayText}`,
-						totalFound: 0,
-						folder: mailbox,
-						searchQuery: searchDisplayText,
-						searchMode: searchMode,
+						searchSummary: {
+							totalFound: 0,
+							returned: 0,
+							query: searchDisplayText,
+							criteria: searchCriteria,
+							folder: mailbox,
+						},
+						uids: [], // Empty array when no results
+						firstUID: null,
 					},
 				},
 			];
