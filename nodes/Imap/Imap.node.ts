@@ -638,19 +638,7 @@ export class Imap implements INodeType {
 					},
 				},
 			},
-			// Download attachments for getEmail
-			{
-				displayName: 'Download Attachments',
-				name: 'downloadAttachments',
-				type: 'boolean',
-				default: false,
-				description: 'Whether to download all attachments as binary data',
-				displayOptions: {
-					show: {
-						operation: ['getEmail'],
-					},
-				},
-			},
+
 			// Attachment index
 			{
 				displayName: 'Attachment Index',

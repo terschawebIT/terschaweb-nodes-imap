@@ -75,7 +75,14 @@ export class GetEmailOperation implements IImapOperation {
 		try {
 			// Parse email content (will include attachments info but we'll ignore them)
 			parsed = await simpleParser(message.source);
+			console.log('Email parsed successfully:', {
+				subject: parsed.subject,
+				fromCount: parsed.from ? 1 : 0,
+				textLength: typeof parsed.text === 'string' ? parsed.text.length : 0,
+				htmlLength: typeof parsed.html === 'string' ? parsed.html.length : 0
+			});
 		} catch (error) {
+			console.error('Email parsing failed:', error);
 			throw new NodeApiError(executeFunctions.getNode(), {
 				message: `Failed to parse email content: ${(error as Error).message}`,
 			});
@@ -89,7 +96,7 @@ export class GetEmailOperation implements IImapOperation {
 
 		// Return email data with content but NO attachments
 		const emailData: IEmailData = {
-			uid: message.uid,
+			uid: typeof message.uid === 'string' ? parseInt(message.uid, 10) : message.uid,
 			subject: parsed.subject || '',
 			from: parsed.from || {},
 			to: normalizeAddresses(parsed.to),
@@ -103,6 +110,15 @@ export class GetEmailOperation implements IImapOperation {
 			seen: message.flags?.has('\\Seen') || false,
 			size: message.size
 		};
+
+		console.log('Email data prepared for return:', {
+			uid: emailData.uid,
+			subject: emailData.subject,
+			from: emailData.from,
+			textLength: emailData.text?.length || 0,
+			htmlLength: emailData.html?.length || 0,
+			flagsCount: emailData.flags.size
+		});
 
 		return emailData;
 	}
