@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-imap-ai",
-  	"version": "2.2.3",
+  "version": "2.2.4",
   "description": "Simplified IMAP node for n8n with AI-agent support. Clean and modular email and mailbox management for automation workflows.",
   "keywords": [
     "n8n-community-node-package",
@@ -43,14 +43,20 @@
     "format:check": "biome format nodes credentials package.json",
     "lint": "biome check nodes credentials package.json",
     "lint:fix": "biome check --write nodes credentials package.json",
-    		"prepublishOnly": "npm run build",
+    "prepublishOnly": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "n8n": {
     "n8nNodesApiVersion": 1,
-    "credentials": ["dist/credentials/ImapCredentials.credentials.js"],
-    "nodes": ["dist/nodes/Imap/Imap.node.js"]
+    "credentials": [
+      "dist/credentials/ImapCredentials.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/Imap/Imap.node.js"
+    ]
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
