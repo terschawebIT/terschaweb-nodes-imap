@@ -13,7 +13,6 @@ export class GetEmailOperation implements IImapOperation {
 		const mailboxParam = executeFunctions.getNodeParameter('mailbox', itemIndex) as string | { mode: string; value: string };
 		const mailbox = ParameterValidator.extractMailboxName(mailboxParam);
 		const emailUid = executeFunctions.getNodeParameter('emailUid', itemIndex) as string;
-		const downloadAttachments = executeFunctions.getNodeParameter('downloadAttachments', itemIndex, false) as boolean;
 
 		ParameterValidator.validateMailbox(mailboxParam);
 		ParameterValidator.validateUid(emailUid);
@@ -36,9 +35,9 @@ export class GetEmailOperation implements IImapOperation {
 				});
 			}
 
-			// Use the most basic UID FETCH with minimal parameters
+			// Fetch full email content but skip attachment processing
 			const messageGenerator = client.fetch(emailUid.toString(), {
-				source: true,
+				source: true,  // Full email source for text/html content
 				uid: true,
 				flags: true,
 				size: true
@@ -65,6 +64,7 @@ export class GetEmailOperation implements IImapOperation {
 			});
 		}
 
+				// Parse email content but skip attachments
 		if (!message.source) {
 			throw new NodeApiError(executeFunctions.getNode(), {
 				message: `Email source not available for UID ${emailUid}`,
@@ -73,6 +73,7 @@ export class GetEmailOperation implements IImapOperation {
 
 		let parsed: ParsedMail;
 		try {
+			// Parse email content (will include attachments info but we'll ignore them)
 			parsed = await simpleParser(message.source);
 		} catch (error) {
 			throw new NodeApiError(executeFunctions.getNode(), {
@@ -86,6 +87,7 @@ export class GetEmailOperation implements IImapOperation {
 			return Array.isArray(addresses) ? addresses : [addresses];
 		};
 
+		// Return email data with content but NO attachments
 		const emailData: IEmailData = {
 			uid: message.uid,
 			subject: parsed.subject || '',
@@ -94,35 +96,13 @@ export class GetEmailOperation implements IImapOperation {
 			cc: normalizeAddresses(parsed.cc),
 			bcc: normalizeAddresses(parsed.bcc),
 			date: parsed.date || null,
-			text: parsed.text || '',
-			html: parsed.html || '',
-			attachments:
-				parsed.attachments?.map((att) => ({
-					filename: att.filename,
-					contentType: att.contentType,
-					size: att.size,
-				})) || [],
+			text: parsed.text || '',    // Full text content
+			html: parsed.html || '',    // Full HTML content
+			attachments: [],  // NO attachments - use downloadAttachment operation instead
 			flags: message.flags || new Set(),
 			seen: message.flags?.has('\\Seen') || false,
-			size: message.size,
+			size: message.size
 		};
-
-		// Download attachments as binary if requested
-		if (downloadAttachments && parsed.attachments && parsed.attachments.length > 0) {
-			emailData.binaryAttachments = [];
-
-			for (let i = 0; i < parsed.attachments.length; i++) {
-				const attachment = parsed.attachments[i];
-				if (attachment.content) {
-					emailData.binaryAttachments.push({
-						filename: attachment.filename || `attachment_${i}`,
-						contentType: attachment.contentType || 'application/octet-stream',
-						data: attachment.content,
-						size: attachment.size || attachment.content.length,
-					});
-				}
-			}
-		}
 
 		return emailData;
 	}

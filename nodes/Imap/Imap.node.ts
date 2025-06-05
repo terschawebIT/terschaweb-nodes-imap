@@ -672,7 +672,7 @@ export class Imap implements INodeType {
 			async getMailboxes(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				const credentials = await this.getCredentials('imap');
 
-				// Create IMAP client
+				// Create IMAP client with timeouts
 				const client = new ImapFlow({
 					host: credentials.host as string,
 					port: credentials.port as number,
@@ -681,6 +681,9 @@ export class Imap implements INodeType {
 						user: credentials.user as string,
 						pass: credentials.password as string,
 					},
+					socketTimeout: 10 * 60 * 1000, // 10 minutes for large email downloads
+					connectionTimeout: 15 * 1000, // 15 seconds connection timeout
+					greetingTimeout: 10 * 1000, // 10 seconds greeting timeout
 				});
 
 				try {
@@ -716,7 +719,7 @@ export class Imap implements INodeType {
 		// Get credentials
 		const credentials = await this.getCredentials('imap');
 
-		// Create IMAP client
+		// Create IMAP client with optimized timeouts for large emails
 		const client = new ImapFlow({
 			host: credentials.host as string,
 			port: credentials.port as number,
@@ -725,6 +728,9 @@ export class Imap implements INodeType {
 				user: credentials.user as string,
 				pass: credentials.password as string,
 			},
+			socketTimeout: 10 * 60 * 1000, // 10 minutes for large email downloads
+			connectionTimeout: 15 * 1000, // 15 seconds connection timeout
+			greetingTimeout: 10 * 1000, // 10 seconds greeting timeout
 		});
 
 		try {
