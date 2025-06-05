@@ -9,10 +9,11 @@ export class DeleteEmailOperation implements IImapOperation {
 		client: ImapFlow,
 		itemIndex: number,
 	): Promise<any> {
-		const mailbox = executeFunctions.getNodeParameter('mailbox', itemIndex) as string;
+		const mailboxParam = executeFunctions.getNodeParameter('mailbox', itemIndex) as string | { mode: string; value: string };
+		const mailbox = ParameterValidator.extractMailboxName(mailboxParam);
 		const emailUid = executeFunctions.getNodeParameter('emailUid', itemIndex) as string;
 
-		ParameterValidator.validateMailbox(mailbox);
+		ParameterValidator.validateMailbox(mailboxParam);
 		ParameterValidator.validateUid(emailUid);
 
 		try {

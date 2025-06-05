@@ -9,13 +9,15 @@ export class MoveEmailOperation implements IImapOperation {
 		client: ImapFlow,
 		itemIndex: number,
 	): Promise<any> {
-		const mailbox = executeFunctions.getNodeParameter('mailbox', itemIndex) as string;
+		const mailboxParam = executeFunctions.getNodeParameter('mailbox', itemIndex) as string | { mode: string; value: string };
+		const mailbox = ParameterValidator.extractMailboxName(mailboxParam);
 		const emailUid = executeFunctions.getNodeParameter('emailUid', itemIndex) as string;
-		const targetMailbox = executeFunctions.getNodeParameter('targetMailbox', itemIndex) as string;
+		const targetMailboxParam = executeFunctions.getNodeParameter('targetMailbox', itemIndex) as string | { mode: string; value: string };
+		const targetMailbox = ParameterValidator.extractMailboxName(targetMailboxParam);
 
-		ParameterValidator.validateMailbox(mailbox);
+		ParameterValidator.validateMailbox(mailboxParam);
 		ParameterValidator.validateUid(emailUid);
-		ParameterValidator.validateMailbox(targetMailbox);
+		ParameterValidator.validateMailbox(targetMailboxParam);
 
 		try {
 			await client.mailboxOpen(mailbox);

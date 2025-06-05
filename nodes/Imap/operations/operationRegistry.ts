@@ -1,5 +1,6 @@
 import { IImapOperation } from '../utils/types';
 import { CreateMailboxOperation } from './createMailbox';
+import { CreateDraftOperation } from './createDraft';
 import { DeleteEmailOperation } from './deleteEmail';
 import { DownloadAttachmentOperation } from './downloadAttachment';
 import { GetEmailOperation } from './getEmail';
@@ -19,6 +20,7 @@ export class OperationRegistry {
 		['deleteEmail', new DeleteEmailOperation()],
 		['listMailboxes', new ListMailboxesOperation()],
 		['createMailbox', new CreateMailboxOperation()],
+		['createDraft', new CreateDraftOperation()],
 		['downloadAttachment', new DownloadAttachmentOperation()],
 	]);
 

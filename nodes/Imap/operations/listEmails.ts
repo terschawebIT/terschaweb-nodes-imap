@@ -9,10 +9,11 @@ export class ListEmailsOperation implements IImapOperation {
 		client: ImapFlow,
 		itemIndex: number,
 	): Promise<INodeExecutionData[]> {
-		const mailbox = executeFunctions.getNodeParameter('mailbox', itemIndex) as string;
+		const mailboxParam = executeFunctions.getNodeParameter('mailbox', itemIndex) as string | { mode: string; value: string };
+		const mailbox = ParameterValidator.extractMailboxName(mailboxParam);
 		const limit = executeFunctions.getNodeParameter('limit', itemIndex) as number;
 
-		ParameterValidator.validateMailbox(mailbox);
+		ParameterValidator.validateMailbox(mailboxParam);
 		const validatedLimit = ParameterValidator.validateLimit(limit);
 
 		try {

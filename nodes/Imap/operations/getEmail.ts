@@ -10,10 +10,12 @@ export class GetEmailOperation implements IImapOperation {
 		client: ImapFlow,
 		itemIndex: number,
 	): Promise<IEmailData> {
-		const mailbox = executeFunctions.getNodeParameter('mailbox', itemIndex) as string;
+		const mailboxParam = executeFunctions.getNodeParameter('mailbox', itemIndex) as string | { mode: string; value: string };
+		const mailbox = ParameterValidator.extractMailboxName(mailboxParam);
 		const emailUid = executeFunctions.getNodeParameter('emailUid', itemIndex) as string;
+		const downloadAttachments = executeFunctions.getNodeParameter('downloadAttachments', itemIndex, false) as boolean;
 
-		ParameterValidator.validateMailbox(mailbox);
+		ParameterValidator.validateMailbox(mailboxParam);
 		ParameterValidator.validateUid(emailUid);
 
 		try {
@@ -64,7 +66,7 @@ export class GetEmailOperation implements IImapOperation {
 			return Array.isArray(addresses) ? addresses : [addresses];
 		};
 
-		return {
+		const emailData: IEmailData = {
 			uid: message.uid,
 			subject: parsed.subject || '',
 			from: parsed.from || {},
@@ -84,5 +86,24 @@ export class GetEmailOperation implements IImapOperation {
 			seen: message.flags?.has('\\Seen') || false,
 			size: message.size,
 		};
+
+		// Download attachments as binary if requested
+		if (downloadAttachments && parsed.attachments && parsed.attachments.length > 0) {
+			emailData.binaryAttachments = [];
+
+			for (let i = 0; i < parsed.attachments.length; i++) {
+				const attachment = parsed.attachments[i];
+				if (attachment.content) {
+					emailData.binaryAttachments.push({
+						filename: attachment.filename || `attachment_${i}`,
+						contentType: attachment.contentType || 'application/octet-stream',
+						data: attachment.content,
+						size: attachment.size || attachment.content.length,
+					});
+				}
+			}
+		}
+
+		return emailData;
 	}
 }

@@ -169,10 +169,24 @@ export class ParameterValidator {
 		}
 	}
 
-	static validateMailbox(mailbox: string): void {
-		if (!mailbox || mailbox.trim() === '') {
+	static validateMailbox(mailbox: string | { mode: string; value: string }): void {
+		const mailboxName = this.extractMailboxName(mailbox);
+		if (!mailboxName || mailboxName.trim() === '') {
 			throw new Error('Folder name is required and cannot be empty');
 		}
+	}
+
+	static extractMailboxName(mailbox: string | { mode: string; value: string }): string {
+		if (typeof mailbox === 'string') {
+			return mailbox;
+		}
+
+		// Handle resource locator
+		if (mailbox && typeof mailbox === 'object' && mailbox.value) {
+			return mailbox.value;
+		}
+
+		throw new Error('Invalid mailbox parameter format');
 	}
 
 	static validateLimit(limit: number): number {

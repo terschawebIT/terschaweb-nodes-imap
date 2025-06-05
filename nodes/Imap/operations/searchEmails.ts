@@ -9,12 +9,29 @@ export class SearchEmailsOperation implements IImapOperation {
 		client: ImapFlow,
 		itemIndex: number,
 	): Promise<INodeExecutionData[]> {
-		const mailbox = executeFunctions.getNodeParameter('mailbox', itemIndex) as string;
-		const searchQuery = executeFunctions.getNodeParameter('searchQuery', itemIndex) as string;
+		const mailboxParam = executeFunctions.getNodeParameter('mailbox', itemIndex) as string | { mode: string; value: string };
+		const mailbox = ParameterValidator.extractMailboxName(mailboxParam);
+		const searchMode = executeFunctions.getNodeParameter('searchMode', itemIndex, 'simple') as string;
 		const limit = executeFunctions.getNodeParameter('limit', itemIndex) as number;
 
-		ParameterValidator.validateMailbox(mailbox);
+		ParameterValidator.validateMailbox(mailboxParam);
 		const validatedLimit = ParameterValidator.validateLimit(limit);
+
+		// Build search criteria based on mode
+		let searchCriteria: any;
+		let searchDisplayText: string;
+
+		if (searchMode === 'simple') {
+			const searchQuery = executeFunctions.getNodeParameter('searchQuery', itemIndex) as string;
+			ParameterValidator.validateSearchQuery(searchQuery);
+			searchCriteria = SearchQueryParser.parse(searchQuery);
+			searchDisplayText = searchQuery;
+		} else {
+			// Advanced mode - build criteria from individual fields
+			const result = this.buildAdvancedSearchCriteria(executeFunctions, itemIndex);
+			searchCriteria = result.criteria;
+			searchDisplayText = result.displayText;
+		}
 
 		try {
 			await client.mailboxOpen(mailbox);
@@ -24,9 +41,6 @@ export class SearchEmailsOperation implements IImapOperation {
 			});
 		}
 
-		// Parse search query into IMAP search criteria
-		const searchCriteria = SearchQueryParser.parse(searchQuery);
-
 		// Perform server-side search
 		let searchResults: number[];
 		try {
@@ -34,7 +48,7 @@ export class SearchEmailsOperation implements IImapOperation {
 			searchResults = await client.search(searchCriteria);
 		} catch (error) {
 			throw new NodeApiError(executeFunctions.getNode(), {
-				message: `Server-side search failed: ${(error as Error).message}. Query: ${searchQuery}`,
+				message: `Server-side search failed: ${(error as Error).message}. Query: ${searchDisplayText}`,
 			});
 		}
 
@@ -42,7 +56,7 @@ export class SearchEmailsOperation implements IImapOperation {
 			return [
 				{
 					json: {
-						message: `No emails found matching criteria: ${searchQuery}`,
+						message: `No emails found matching criteria: ${searchDisplayText}`,
 						totalFound: 0,
 						folder: mailbox,
 					},
@@ -77,7 +91,7 @@ export class SearchEmailsOperation implements IImapOperation {
 							flags: Array.from(message.flags || []),
 							seen: message.flags?.has('\\Seen') || false,
 							// Add search context
-							searchQuery: searchQuery,
+							searchQuery: searchDisplayText,
 							searchCriteria: searchCriteria,
 						},
 					});
@@ -94,7 +108,7 @@ export class SearchEmailsOperation implements IImapOperation {
 			messages.unshift({
 				json: {
 					searchSummary: {
-						query: searchQuery,
+						query: searchDisplayText,
 						totalFound: searchResults.length,
 						returned: messages.length - 1, // Exclude this summary
 						folder: mailbox,
@@ -105,5 +119,119 @@ export class SearchEmailsOperation implements IImapOperation {
 		}
 
 		return messages;
+	}
+
+	private buildAdvancedSearchCriteria(executeFunctions: IExecuteFunctions, itemIndex: number): { criteria: any; displayText: string } {
+		const criteria: any = {};
+		const displayParts: string[] = [];
+
+		// From filter
+		const fromEmail = executeFunctions.getNodeParameter('fromEmail', itemIndex, '') as string;
+		if (fromEmail.trim()) {
+			criteria.from = fromEmail.trim();
+			displayParts.push(`from:${fromEmail.trim()}`);
+		}
+
+		// To filter
+		const toEmail = executeFunctions.getNodeParameter('toEmail', itemIndex, '') as string;
+		if (toEmail.trim()) {
+			criteria.to = toEmail.trim();
+			displayParts.push(`to:${toEmail.trim()}`);
+		}
+
+		// Subject filter
+		const subjectFilter = executeFunctions.getNodeParameter('subjectFilter', itemIndex, '') as string;
+		if (subjectFilter.trim()) {
+			criteria.subject = subjectFilter.trim();
+			displayParts.push(`subject:${subjectFilter.trim()}`);
+		}
+
+		// Body text filter
+		const bodyText = executeFunctions.getNodeParameter('bodyText', itemIndex, '') as string;
+		if (bodyText.trim()) {
+			criteria.body = bodyText.trim();
+			displayParts.push(`body:${bodyText.trim()}`);
+		}
+
+		// Read status
+		const readStatus = executeFunctions.getNodeParameter('readStatus', itemIndex, 'all') as string;
+		if (readStatus === 'read') {
+			criteria.seen = true;
+			displayParts.push('read');
+		} else if (readStatus === 'unread') {
+			criteria.unseen = true;
+			displayParts.push('unread');
+		}
+
+		// Flagged status
+		const flaggedStatus = executeFunctions.getNodeParameter('flaggedStatus', itemIndex, 'all') as string;
+		if (flaggedStatus === 'flagged') {
+			criteria.flagged = true;
+			displayParts.push('flagged');
+		} else if (flaggedStatus === 'unflagged') {
+			criteria.unflagged = true;
+			displayParts.push('unflagged');
+		}
+
+		// Date range
+		const dateRange = executeFunctions.getNodeParameter('dateRange', itemIndex, 'all') as string;
+		const now = new Date();
+
+		switch (dateRange) {
+			case 'today':
+				criteria.since = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+				displayParts.push('since:today');
+				break;
+			case 'yesterday':
+				const yesterday = new Date(now);
+				yesterday.setDate(yesterday.getDate() - 1);
+				criteria.since = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
+				criteria.before = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+				displayParts.push('since:yesterday');
+				break;
+			case 'week':
+				const weekAgo = new Date(now);
+				weekAgo.setDate(weekAgo.getDate() - 7);
+				criteria.since = weekAgo;
+				displayParts.push('since:7d');
+				break;
+			case 'month':
+				const monthAgo = new Date(now);
+				monthAgo.setDate(monthAgo.getDate() - 30);
+				criteria.since = monthAgo;
+				displayParts.push('since:30d');
+				break;
+			case 'custom':
+				const sinceDate = executeFunctions.getNodeParameter('sinceDate', itemIndex, '') as string;
+				const beforeDate = executeFunctions.getNodeParameter('beforeDate', itemIndex, '') as string;
+
+				if (sinceDate) {
+					criteria.since = new Date(sinceDate);
+					displayParts.push(`since:${sinceDate}`);
+				}
+				if (beforeDate) {
+					criteria.before = new Date(beforeDate);
+					displayParts.push(`before:${beforeDate}`);
+				}
+				break;
+		}
+
+		// Has attachments (Note: IMAP doesn't have direct attachment search, we approximate with size)
+		const hasAttachments = executeFunctions.getNodeParameter('hasAttachments', itemIndex, 'all') as string;
+		if (hasAttachments === 'yes') {
+			criteria.larger = 50000; // Assume emails > 50KB likely have attachments
+			displayParts.push('larger:50000');
+		}
+
+		// If no criteria specified, search all
+		if (Object.keys(criteria).length === 0) {
+			criteria.all = true;
+			return { criteria, displayText: 'all emails' };
+		}
+
+		return {
+			criteria,
+			displayText: displayParts.length > 0 ? displayParts.join(' AND ') : 'advanced search'
+		};
 	}
 }

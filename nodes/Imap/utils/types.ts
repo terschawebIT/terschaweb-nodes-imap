@@ -23,6 +23,14 @@ export interface IEmailData {
 	flags: Set<string>;
 	seen: boolean;
 	size?: number;
+	binaryAttachments?: IBinaryAttachment[];
+}
+
+export interface IBinaryAttachment {
+	filename: string;
+	contentType: string;
+	data: Buffer;
+	size: number;
 }
 
 export interface IAttachmentData {
