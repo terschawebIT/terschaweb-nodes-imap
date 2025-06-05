@@ -100,11 +100,14 @@ export class Imap implements INodeType {
 			}
 		} finally {
 			// Always close the connection
+			console.log('Starting client cleanup...');
 			try {
 				await client.logout();
+				console.log('Client logout completed');
 			} catch (error) {
-				// Ignore close errors
+				console.log('Client logout error (ignored):', (error as Error).message);
 			}
+			console.log('Finally block completed');
 		}
 
 		console.log('Returning from execute method with items:', returnData.length);
