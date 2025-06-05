@@ -75,73 +75,71 @@ export class SearchEmailsOperation implements IImapOperation {
 
 		const messages: INodeExecutionData[] = [];
 
-		// Use bulk FETCH instead of individual FETCH operations (fixes ImapFlow iterator issue)
-		if (limitedResults.length > 0) {
+		// Fetch only the metadata for found emails (efficient)
+		for (const uid of limitedResults) {
 			try {
-				// Create comma-separated UID list for bulk fetch
-				const uidList = limitedResults.join(',');
-				console.log(`Bulk fetching metadata for ${limitedResults.length} UIDs: ${uidList}`);
+				console.log(`Fetching email metadata for UID: ${uid}`);
 
-				// Use bulk UID FETCH - more reliable than individual fetches
-				const messageGenerator = client.fetch(uidList, {
+				// Use basic UID FETCH without range syntax
+				const messageGenerator = client.fetch(uid.toString(), {
 					envelope: true,
 					flags: true,
 					size: true,
 					uid: true,
 				}, { uid: true });
 
+				let message: any = null;
 				let messageCount = 0;
-				for await (const message of messageGenerator) {
+
+				for await (const msg of messageGenerator) {
 					messageCount++;
-					console.log(`Bulk fetch message ${messageCount} received for UID ${message.uid}:`, {
-						hasEnvelope: !!message.envelope,
-						hasFlags: !!message.flags,
-						hasSize: !!message.size,
-						uid: message.uid
+					console.log(`Message ${messageCount} received for UID ${uid}:`, {
+						hasEnvelope: !!msg.envelope,
+						hasFlags: !!msg.flags,
+						hasSize: !!msg.size,
+						uid: msg.uid
 					});
-
-					if (message && message.envelope) {
-						console.log(`Processing email UID ${message.uid}:`, {
-							subject: message.envelope.subject,
-							from: message.envelope.from?.[0]?.address || 'unknown'
-						});
-
-						messages.push({
-							json: {
-								uid: message.uid,
-								subject: message.envelope?.subject || '',
-								from: message.envelope?.from?.[0] || {},
-								to: message.envelope?.to || [],
-								date: message.envelope?.date || null,
-								size: message.size,
-								flags: Array.from(message.flags || []),
-								seen: message.flags?.has('\\Seen') || false,
-								// Add search context
-								searchQuery: searchDisplayText,
-								searchCriteria: searchCriteria,
-							},
-						});
-					} else {
-						console.warn(`No valid message data for UID ${message.uid}:`, {
-							hasMessage: !!message,
-							hasEnvelope: message?.envelope ? true : false,
-							messageKeys: message ? Object.keys(message) : 'none'
-						});
-					}
+					message = msg;
+					// Don't break - process all messages in case there are multiple chunks
 				}
 
-				console.log(`Bulk fetch completed. Expected ${limitedResults.length} messages, received ${messageCount} messages`);
-			} catch (error) {
-				console.error(`Bulk fetch failed:`, {
-					error: (error as Error).message,
-					stack: (error as Error).stack,
-					uidCount: limitedResults.length
-				});
+				console.log(`Total messages received for UID ${uid}: ${messageCount}`);
 
-				// Fallback: No individual retries to avoid the same problem
-				throw new NodeApiError(executeFunctions.getNode(), {
-					message: `Failed to fetch email data: ${(error as Error).message}`,
+				if (message && message.envelope) {
+					console.log(`Processing email UID ${uid}:`, {
+						subject: message.envelope.subject,
+						from: message.envelope.from?.[0]?.address || 'unknown'
+					});
+
+					messages.push({
+						json: {
+							uid: message.uid,
+							subject: message.envelope?.subject || '',
+							from: message.envelope?.from?.[0] || {},
+							to: message.envelope?.to || [],
+							date: message.envelope?.date || null,
+							size: message.size,
+							flags: Array.from(message.flags || []),
+							seen: message.flags?.has('\\Seen') || false,
+							// Add search context
+							searchQuery: searchDisplayText,
+							searchCriteria: searchCriteria,
+						},
+					});
+				} else {
+					console.warn(`No valid message data for UID ${uid}:`, {
+						hasMessage: !!message,
+						hasEnvelope: message?.envelope ? true : false,
+						messageKeys: message ? Object.keys(message) : 'none'
+					});
+				}
+			} catch (error) {
+				// Log but continue with other emails
+				console.error(`Failed to fetch email UID ${uid}:`, {
+					error: (error as Error).message,
+					stack: (error as Error).stack
 				});
+				continue;
 			}
 		}
 
