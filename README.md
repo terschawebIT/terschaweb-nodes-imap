@@ -1,190 +1,265 @@
-# Simplified IMAP Node for n8n
+# n8n IMAP Node
 
-A clean, modular IMAP node for n8n that provides essential email management functionality with AI-agent support.
+Eine n8n Community Node für IMAP Email-Operationen mit erweiterten Such- und Verwaltungsfunktionen.
 
-## 🎯 Simplified Design
-
-This project has been **drastically simplified** from the original complex structure to focus on core IMAP functionality:
-
-- **Single IMAP Node** with all essential operations
-- **Modular Architecture** for easy maintenance and extension
-- **AI-Agent Optimized** with clear, simple parameters
-- **English Interface** for international compatibility
-
-## 📋 Operations
-
-### Email Operations
-- **List Emails** - Get emails from a mailbox
-- **Get Email** - Retrieve full email content with attachments
-- **Search Emails** - Search emails with simple queries
-- **Move Email** - Move emails between mailboxes
-- **Mark as Read/Unread** - Change email read status
-- **Delete Email** - Mark emails as deleted
-
-### Mailbox Operations
-- **List Mailboxes** - Get all available mailboxes
-- **Create Mailbox** - Create new mailboxes
-
-### Attachment Operations
-- **Download Attachment** - Download email attachments
-
-## 🏗️ Modular Structure
-
-```
-nodes/Imap/
-├── Imap.node.ts              # Main node file
-├── imap.svg                  # Node icon
-├── operations/               # Individual operation modules
-│   ├── operationRegistry.ts  # Registry pattern
-│   ├── listEmails.ts
-│   ├── getEmail.ts
-│   ├── searchEmails.ts
-│   ├── moveEmail.ts
-│   ├── markEmail.ts
-│   ├── deleteEmail.ts
-│   ├── listMailboxes.ts
-│   ├── createMailbox.ts
-│   └── downloadAttachment.ts
-└── utils/                    # Shared utilities
-    ├── types.ts              # TypeScript interfaces
-    └── helpers.ts            # Validation & parsing
-```
-
-## 🤖 AI Agent Support
-
-Each operation provides:
-- **Clear parameter names** (mailbox, emailUid, searchQuery, etc.)
-- **Simple validation** with helpful error messages
-- **Consistent return formats** for easy parsing
-- **Tool support** (`usableAsTool: true`)
-
-## 🔧 Installation
+## Installation
 
 ```bash
-npm install
-npm run build
+npm install n8n-nodes-imap-ai
 ```
 
-## 📝 Usage Examples
+Alternativ über die n8n Community Nodes GUI: `n8n-nodes-imap-ai`
 
-### List Recent Emails (Performance Optimized)
-- Operation: `List Emails`
-- Folder: `INBOX`
-- Limit: `50`
+## Funktionen
 
-*Now fetches only the newest emails efficiently instead of downloading all emails*
+### Email-Operationen
 
-### Server-Side Email Search (NEW!)
-- Operation: `Search Emails`
-- Folder: `INBOX`
-- Search Query Examples:
-  - `from:john` - From anyone with "john" in sender (partial)
-  - `from:@company.com` - From specific domain
-  - `subject:meeting` - Subject containing "meeting"
-  - `unread` - All unread emails
-  - `since:yesterday` - Emails from yesterday onwards
-  - `from:boss and unread` - Complex criteria
+**List Emails**
+- Listet Emails in einem Mailbox-Ordner auf
+- Konfigurierbare Anzahl (Limit)
+- Sortierung nach UID (neueste zuerst)
 
-*All searches run server-side for maximum performance*
+**Get Email**
+- Ruft eine einzelne Email mit vollständigem Inhalt ab
+- Unterstützt Text- und HTML-Inhalte
+- Parst Email-Headers und Metadaten
 
-### Get Full Email Content
-- Operation: `Get Email`
-- Folder: `INBOX`
-- Email UID: `12345`
+**Search Emails**
+- Zwei Modi: Simple Search und Advanced Search
+- Server-seitige IMAP SEARCH für Performance
+- Kombinierbare Suchkriterien im Advanced Mode
 
-## 🔍 Advanced Search Features
+**Move Email**
+- Verschiebt Emails zwischen Mailbox-Ordnern
+- Verwendet IMAP MOVE Kommando
 
-The server-side search supports sophisticated queries:
+**Mark Email**
+- Markiert Emails als gelesen oder ungelesen
+- Ändert IMAP Flags entsprechend
 
-### Basic Searches
-- `from:john@example.com` - From specific sender (exact email)
-- `from:john` - From anyone with "john" in sender (partial match)
-- `from:@company.com` - From anyone at "company.com" domain
-- `to:me@company.com` - To specific recipient
-- `to:team` - To anyone with "team" in recipient  
-- `subject:meeting` - Subject contains "meeting" (partial match)
-- `body:urgent` - Body contains "urgent" (partial match)
-- `text:project` - Anywhere in email (subject, from, body)
+**Delete Email**
+- Markiert Emails zur Löschung
+- Verwendet IMAP STORE mit \Deleted Flag
 
-### Flag-Based Searches
-- `unread` or `unseen` - Unread emails
-- `read` or `seen` - Read emails
-- `flagged` or `important` - Flagged/important emails
-- `answered` or `replied` - Emails that have been replied to
+**Download Attachment**
+- Lädt Email-Anhänge herunter
+- Unterstützt verschiedene Attachment-Typen
 
-### Date-Based Searches  
-- `since:today` - Today's emails
-- `since:yesterday` - Since yesterday
-- `since:7d` - Last 7 days
-- `before:2024-01-01` - Before specific date
+### Mailbox-Operationen
 
-### Size-Based Searches
-- `larger:1000000` - Emails larger than 1MB
-- `smaller:50000` - Emails smaller than 50KB
+**List Mailboxes**
+- Listet alle verfügbaren IMAP-Ordner auf
+- Unterstützt hierarchische Ordnerstrukturen
 
-### Complex Queries
-- `from:boss and unread` - Multiple criteria
-- `subject:urgent or flagged` - Alternative criteria
+**Create Mailbox**
+- Erstellt neue IMAP-Ordner
+- Validiert Ordnernamen
 
-### 💡 Practical Examples
-- `from:noreply` - All automated emails
-- `from:@github.com` - All GitHub notifications  
-- `subject:invoice` - All invoices
-- `from:team and since:today` - Today's team emails
-- `subject:meeting and unread` - Unread meeting emails
-- `from:@company.com and larger:1000000` - Large emails from company
+### Draft-Operationen
 
-*All searches run on the IMAP server for maximum performance*
+**Create Draft**
+- Erstellt Email-Entwürfe
+- Unterstützt Text- und HTML-Format
+- Konfigurierbare Empfänger, Betreff und Inhalt
 
-## 🔐 Credentials
+## Email-Suche
 
-Uses standard IMAP credentials:
-- Host (e.g., `imap.gmail.com`)
-- Port (e.g., `993`)
-- Username/Email
-- Password
-- Secure (SSL/TLS)
+### Simple Search Mode
 
-## 🎨 Key Improvements
+Bietet vordefinierte Filter:
+- All Emails
+- Unread Emails  
+- Read Emails
+- Today's Emails
+- This Week's Emails
 
-✅ **Drastically simplified** from complex multi-node structure  
-✅ **Modular operations** for easy maintenance  
-✅ **AI-agent optimized** parameters  
-✅ **Single interface** per operation  
-✅ **Clean error handling** with validation  
-✅ **English-only** interface  
-✅ **Registry pattern** for operation management  
-✅ **Performance optimized** - server-side search & efficient email fetching  
-✅ **Folder terminology** instead of technical "mailbox" terms  
+Optional mit Textsuche die gleichzeitig Subject, From und Body durchsucht.
 
-## 🔄 Migration from Complex Version
+### Advanced Search Mode
 
-This version removes:
-- ❌ Multiple interface modes
-- ❌ Redundant AI-specific nodes
-- ❌ Complex parameter structures
-- ❌ German language mixing
+Kombinierbare Kriterien:
 
-And adds:
-- ✅ Simple, direct operations
-- ✅ Modular code structure
-- ✅ Better error handling
-- ✅ Cleaner AI integration
+**Content-Filter:**
+- From (Sender): Email-Adresse oder Name
+- To (Empfänger): Ziel-Email-Adresse
+- Subject Contains: Text im Betreff
+- Body Contains: Text im Email-Inhalt
 
-## 📚 Development
+**Status-Filter:**
+- Read Status: Any/Unread Only/Read Only
+- Has Attachments: Any/With Attachments/Without Attachments
 
-To add new operations:
+**Date-Filter:**
+- Quick Date Presets: Last Hour, Today, Yesterday, This Week, Last Week, This Month, Last Month
+- Custom Date Range: Von/Bis Datum
 
-1. Create operation class in `operations/[operationName].ts`
-2. Implement `IImapOperation` interface
-3. Register in `operationRegistry.ts`
-4. Add UI parameters to main node file
+**Size-Filter:**
+- Email Size: Larger than/Smaller than X KB
 
-## 🤝 Contributing
+## Konfiguration
 
-This simplified structure makes contributions much easier:
-- Each operation is isolated
-- Clear interfaces and types
-- Consistent error handling patterns
-- Simple registry for new operations
+### IMAP-Verbindung
+
+Erforderliche Credential-Parameter:
+- Host (z.B. `imap.gmail.com`)
+- Port (z.B. `993`)
+- Username/Email-Adresse
+- Password/App-Password
+- Secure (SSL/TLS aktiviert)
+
+### Parameter-Validierung
+
+Die Node validiert alle Eingabeparameter:
+- Mailbox-Namen werden auf Gültigkeit geprüft
+- Email-UIDs müssen numerisch sein
+- Limits werden auf 1-1000 begrenzt
+- Verbindungsparameter werden vor Ausführung validiert
+
+## Technische Details
+
+### Architektur
+
+**Modular aufgebaut:**
+- Hauptnode-Klasse (`Imap.node.ts`)
+- Separate Operation-Klassen (`operations/`)
+- Geteilte Utilities (`utils/`)
+- Zentrale Property-Definitionen (`ImapNodeProperties.ts`)
+
+**Operations Registry Pattern:**
+- Jede Operation implementiert `IImapOperation` Interface
+- Dynamische Registrierung neuer Operationen möglich
+- Saubere Trennung der Geschäftslogik
+
+### Performance-Optimierungen
+
+**Connection Management:**
+- Promise.race() Timeouts für robuste Verbindungsabwicklung
+- Automatische Connection-Cleanup
+- Fehlerbehandlung mit Fallback-Mechanismen
+
+**Search Performance:**
+- Server-seitige IMAP SEARCH statt Client-seitiges Filtern
+- Optimierte Fetch-Operationen für Metadaten
+- Begrenzte Ergebnismengen zur Performance-Schonung
+
+### Error Handling
+
+**Robuste Fehlerbehandlung:**
+- NodeApiError für konsistente n8n-Integration
+- Detaillierte Fehlermeldungen mit Kontext
+- Graceful Degradation bei Teilausfällen
+
+**Validation:**
+- Parameter-Validierung vor IMAP-Operationen
+- Mailbox-Existenz-Prüfung
+- Email-UID Validierung
+
+## Verwendungsbeispiele
+
+### Einfache Email-Suche
+
+```javascript
+// Simple Mode: Heute's Emails mit Text-Filter
+{
+  "operation": "searchEmails",
+  "searchMode": "simple", 
+  "quickFilter": "today",
+  "simpleSearchText": "invoice"
+}
+```
+
+### Erweiterte Email-Suche
+
+```javascript
+// Advanced Mode: Mehrere Kriterien kombiniert
+{
+  "operation": "searchEmails",
+  "searchMode": "advanced",
+  "advancedCriteria": {
+    "from": "billing@company.com",
+    "subject": "payment", 
+    "readStatus": "unread",
+    "quickDate": "thisWeek",
+    "hasAttachments": "yes"
+  }
+}
+```
+
+### Email-Management
+
+```javascript
+// Email abrufen
+{
+  "operation": "getEmail",
+  "mailbox": "INBOX",
+  "emailUid": "12345"
+}
+
+// Email verschieben  
+{
+  "operation": "moveEmail",
+  "mailbox": "INBOX",
+  "emailUid": "12345", 
+  "targetMailbox": "Archive"
+}
+```
+
+## Kompatibilität
+
+**Getestete IMAP-Server:**
+- Gmail (imap.gmail.com)
+- Outlook/Exchange
+- Standard IMAP-konforme Server
+
+**Voraussetzungen:**
+- n8n Version >= 0.190.0
+- Node.js >= 16
+- IMAP-Server mit SSL/TLS Unterstützung
+
+## Bekannte Limitationen
+
+- OAuth2-Authentifizierung noch nicht implementiert
+- Attachment-Suche nutzt Content-Type Workaround (IMAP-Standard-Limitation)
+- Große Email-Attachments können Memory-intensiv sein
+
+## Entwicklung
+
+### Neue Operationen hinzufügen
+
+1. Operation-Klasse in `operations/` erstellen
+2. `IImapOperation` Interface implementieren  
+3. In `operationRegistry.ts` registrieren
+4. UI-Parameter in `ImapNodeProperties.ts` definieren
+
+### Build & Test
+
+```bash
+npm run build
+npm test
+```
+
+## Changelog
+
+**v2.3.0**
+- Neue Multi-Criteria Search UI
+- Simple vs Advanced Search Modi
+- Erweiterte Date/Size/Attachment Filter
+
+**v2.2.4** 
+- Promise.race() Timeout Fix für IMAP logout
+- Verbesserte Connection-Stabilität
+
+**v2.2.0**
+- Modulare Architektur-Refactoring
+- Operations Registry Pattern
+- Verbesserte Error Handling
+
+## Support
+
+- GitHub Issues: [Repository Issues](https://github.com/terschawebIT/terschaweb-nodes-imap/issues)
+- Email: support@terschaweb.de
+
+## Lizenz
+
+MIT License
 

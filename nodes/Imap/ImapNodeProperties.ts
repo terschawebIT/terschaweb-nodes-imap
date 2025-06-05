@@ -191,10 +191,36 @@ export const ImapNodeProperties: INodeProperties[] = [
 			},
 		},
 	},
-	// Search criteria for search operation
+	// Search criteria for search operation - IMPROVED MULTI-CRITERIA SEARCH
 	{
-		displayName: 'Search Criteria',
-		name: 'searchCriteria',
+		displayName: 'Search Mode',
+		name: 'searchMode',
+		type: 'options',
+		options: [
+			{
+				name: 'Simple Search',
+				value: 'simple',
+				description: 'Quick search with basic filters',
+			},
+			{
+				name: 'Advanced Search',
+				value: 'advanced',
+				description: 'Combine multiple search criteria',
+			},
+		],
+		default: 'simple',
+		description: 'Choose search complexity level',
+		displayOptions: {
+			show: {
+				operation: ['searchEmails'],
+			},
+		},
+	},
+
+	// === SIMPLE SEARCH MODE ===
+	{
+		displayName: 'Quick Filter',
+		name: 'quickFilter',
 		type: 'options',
 		options: [
 			{
@@ -213,138 +239,263 @@ export const ImapNodeProperties: INodeProperties[] = [
 				description: 'Get only read emails',
 			},
 			{
-				name: 'From Sender',
-				value: 'from',
-				description: 'Search emails from specific sender',
+				name: 'Today\'s Emails',
+				value: 'today',
+				description: 'Emails received today',
 			},
 			{
-				name: 'To Recipient',
-				value: 'to',
-				description: 'Search emails to specific recipient',
-			},
-			{
-				name: 'Subject Contains',
-				value: 'subject',
-				description: 'Search emails with specific text in subject',
-			},
-			{
-				name: 'Body Contains',
-				value: 'body',
-				description: 'Search emails with specific text in body',
-			},
-			{
-				name: 'Time Based',
-				value: 'time',
-				description: 'Search emails based on time criteria',
+				name: 'This Week\'s Emails',
+				value: 'thisWeek',
+				description: 'Emails received this week',
 			},
 		],
 		default: 'all',
-		description: 'The search criteria to use',
+		description: 'Quick pre-defined filters',
 		displayOptions: {
 			show: {
 				operation: ['searchEmails'],
+				searchMode: ['simple'],
 			},
 		},
 	},
-	// Search value for specific search criteria
 	{
-		displayName: 'Search Value',
-		name: 'searchValue',
+		displayName: 'Search Text (Optional)',
+		name: 'simpleSearchText',
 		type: 'string',
 		default: '',
-		description: 'The value to search for (email address, text, etc.)',
+		placeholder: 'Search in subject, from, or body...',
+		description: 'Text to search for in emails (searches subject, sender, and body)',
 		displayOptions: {
 			show: {
 				operation: ['searchEmails'],
-				searchCriteria: ['from', 'to', 'subject', 'body'],
+				searchMode: ['simple'],
 			},
 		},
 	},
-	// Time criteria for time-based search
+
+	// === ADVANCED SEARCH MODE ===
 	{
-		displayName: 'Time Criteria',
-		name: 'timeCriteria',
-		type: 'options',
+		displayName: 'Search Criteria',
+		name: 'advancedCriteria',
+		type: 'collection',
+		placeholder: 'Add Search Criterion',
+		default: {},
+		description: 'Combine multiple search criteria',
+		displayOptions: {
+			show: {
+				operation: ['searchEmails'],
+				searchMode: ['advanced'],
+			},
+		},
 		options: [
+			// Sender criteria
 			{
-				name: 'Last Hour',
-				value: 'lastHour',
-				description: 'Emails from the last hour',
+				displayName: 'From (Sender)',
+				name: 'from',
+				type: 'string',
+				default: '',
+				placeholder: 'sender@example.com or "John Doe"',
+				description: 'Search emails from specific sender (email address or name)',
 			},
+			// Recipient criteria
 			{
-				name: 'Last 6 Hours',
-				value: 'last6Hours',
-				description: 'Emails from the last 6 hours',
+				displayName: 'To (Recipient)',
+				name: 'to',
+				type: 'string',
+				default: '',
+				placeholder: 'recipient@example.com',
+				description: 'Search emails sent to specific recipient',
 			},
+			// Subject criteria
 			{
-				name: 'Today',
-				value: 'today',
-				description: 'Emails from today',
+				displayName: 'Subject Contains',
+				name: 'subject',
+				type: 'string',
+				default: '',
+				placeholder: 'Meeting, Invoice, etc.',
+				description: 'Text that must be in the email subject',
 			},
+			// Body criteria
 			{
-				name: 'Yesterday',
-				value: 'yesterday',
-				description: 'Emails from yesterday',
+				displayName: 'Body Contains',
+				name: 'body',
+				type: 'string',
+				default: '',
+				placeholder: 'Important keywords...',
+				description: 'Text that must be in the email body',
 			},
+			// Read status
 			{
-				name: 'This Week',
-				value: 'thisWeek',
-				description: 'Emails from this week',
+				displayName: 'Read Status',
+				name: 'readStatus',
+				type: 'options',
+				options: [
+					{
+						name: 'Any (Read + Unread)',
+						value: 'any',
+						description: 'Include both read and unread emails',
+					},
+					{
+						name: 'Unread Only',
+						value: 'unread',
+						description: 'Only unread emails',
+					},
+					{
+						name: 'Read Only',
+						value: 'read',
+						description: 'Only read emails',
+					},
+				],
+				default: 'any',
+				description: 'Filter by read status',
 			},
+			// Date range
 			{
-				name: 'Last Week',
-				value: 'lastWeek',
-				description: 'Emails from last week',
+				displayName: 'Date Range',
+				name: 'dateRange',
+				type: 'fixedCollection',
+				default: {},
+				description: 'Filter emails by date',
+				options: [
+					{
+						name: 'range',
+						displayName: 'Date Range',
+						values: [
+							{
+								displayName: 'From Date',
+								name: 'from',
+								type: 'dateTime',
+								default: '',
+								description: 'Start date (emails on or after this date)',
+							},
+							{
+								displayName: 'To Date',
+								name: 'to',
+								type: 'dateTime',
+								default: '',
+								description: 'End date (emails before or on this date)',
+							},
+						],
+					},
+				],
 			},
+			// Quick date presets
 			{
-				name: 'This Month',
-				value: 'thisMonth',
-				description: 'Emails from this month',
+				displayName: 'Quick Date Filter',
+				name: 'quickDate',
+				type: 'options',
+				options: [
+					{
+						name: 'None',
+						value: 'none',
+						description: 'No date filtering',
+					},
+					{
+						name: 'Last Hour',
+						value: 'lastHour',
+						description: 'Emails from the last hour',
+					},
+					{
+						name: 'Today',
+						value: 'today',
+						description: 'Emails from today',
+					},
+					{
+						name: 'Yesterday',
+						value: 'yesterday',
+						description: 'Emails from yesterday',
+					},
+					{
+						name: 'This Week',
+						value: 'thisWeek',
+						description: 'Emails from this week',
+					},
+					{
+						name: 'Last Week',
+						value: 'lastWeek',
+						description: 'Emails from last week',
+					},
+					{
+						name: 'This Month',
+						value: 'thisMonth',
+						description: 'Emails from this month',
+					},
+					{
+						name: 'Last Month',
+						value: 'lastMonth',
+						description: 'Emails from last month',
+					},
+				],
+				default: 'none',
+				description: 'Quick date range presets (overrides custom date range)',
 			},
+			// Size filter
 			{
-				name: 'Last Month',
-				value: 'lastMonth',
-				description: 'Emails from last month',
+				displayName: 'Email Size',
+				name: 'sizeFilter',
+				type: 'fixedCollection',
+				default: {},
+				description: 'Filter emails by size',
+				options: [
+					{
+						name: 'size',
+						displayName: 'Size Filter',
+						values: [
+							{
+								displayName: 'Condition',
+								name: 'condition',
+								type: 'options',
+								options: [
+									{
+										name: 'Larger than',
+										value: 'larger',
+										description: 'Emails larger than specified size',
+									},
+									{
+										name: 'Smaller than',
+										value: 'smaller',
+										description: 'Emails smaller than specified size',
+									},
+								],
+								default: 'larger',
+							},
+							{
+								displayName: 'Size (KB)',
+								name: 'sizeKB',
+								type: 'number',
+								default: 100,
+								description: 'Size threshold in kilobytes',
+							},
+						],
+					},
+				],
 			},
+			// Has attachments
 			{
-				name: 'Since Date',
-				value: 'since',
-				description: 'Emails since a specific date',
-			},
-			{
-				name: 'Before Date',
-				value: 'before',
-				description: 'Emails before a specific date',
-			},
-			{
-				name: 'On Date',
-				value: 'on',
-				description: 'Emails on a specific date',
+				displayName: 'Has Attachments',
+				name: 'hasAttachments',
+				type: 'options',
+				options: [
+					{
+						name: 'Any',
+						value: 'any',
+						description: 'Emails with or without attachments',
+					},
+					{
+						name: 'With Attachments',
+						value: 'yes',
+						description: 'Only emails with attachments',
+					},
+					{
+						name: 'Without Attachments',
+						value: 'no',
+						description: 'Only emails without attachments',
+					},
+				],
+				default: 'any',
+				description: 'Filter by attachment presence',
 			},
 		],
-		default: 'today',
-		description: 'Time-based search criteria',
-		displayOptions: {
-			show: {
-				operation: ['searchEmails'],
-				searchCriteria: ['time'],
-			},
-		},
-	},
-	// Date field for time-based search
-	{
-		displayName: 'Date',
-		name: 'searchDate',
-		type: 'dateTime',
-		default: '',
-		description: 'The date to search for (for since/before/on criteria)',
-		displayOptions: {
-			show: {
-				operation: ['searchEmails'],
-				searchCriteria: ['time'],
-				timeCriteria: ['since', 'before', 'on'],
-			},
-		},
 	},
 	// Folder name for create operation
 	{

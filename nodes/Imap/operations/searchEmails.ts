@@ -1,6 +1,6 @@
 import { ImapFlow } from 'imapflow';
 import { IExecuteFunctions, INodeExecutionData, NodeApiError } from 'n8n-workflow';
-import { ParameterValidator, SearchQueryParser } from '../utils/helpers';
+import { ParameterValidator } from '../utils/helpers';
 import { IImapOperation } from '../utils/types';
 
 export class SearchEmailsOperation implements IImapOperation {
@@ -11,38 +11,43 @@ export class SearchEmailsOperation implements IImapOperation {
 	): Promise<INodeExecutionData[]> {
 		const mailboxParam = executeFunctions.getNodeParameter('mailbox', itemIndex) as string | { mode: string; value: string };
 		const mailbox = ParameterValidator.extractMailboxName(mailboxParam);
-		const searchMode = executeFunctions.getNodeParameter('searchMode', itemIndex, 'simple') as string;
 		const limit = executeFunctions.getNodeParameter('limit', itemIndex) as number;
+		const searchMode = executeFunctions.getNodeParameter('searchMode', itemIndex) as string;
 
 		ParameterValidator.validateMailbox(mailboxParam);
-		const validatedLimit = ParameterValidator.validateLimit(limit);
-
-		// Build search criteria based on mode
-		let searchCriteria: any;
-		let searchDisplayText: string;
-
-		if (searchMode === 'simple') {
-			const searchQuery = executeFunctions.getNodeParameter('searchQuery', itemIndex) as string;
-			ParameterValidator.validateSearchQuery(searchQuery);
-			searchCriteria = SearchQueryParser.parse(searchQuery);
-			searchDisplayText = searchQuery;
-		} else {
-			// Advanced mode - build criteria from individual fields
-			const result = this.buildAdvancedSearchCriteria(executeFunctions, itemIndex);
-			searchCriteria = result.criteria;
-			searchDisplayText = result.displayText;
-		}
+		const validatedLimit = Math.max(1, Math.min(limit, 1000));
 
 		try {
 			await client.mailboxOpen(mailbox);
 		} catch (error) {
 			throw new NodeApiError(executeFunctions.getNode(), {
-				message: `Failed to open folder ${mailbox}: ${(error as Error).message}`,
+				message: `Failed to open mailbox ${mailbox}: ${(error as Error).message}`,
 			});
 		}
 
-		// Perform server-side search
-		let searchResults: number[];
+		let searchCriteria: any = {};
+		let searchDisplayText = '';
+
+		// Build search criteria based on mode
+		if (searchMode === 'simple') {
+			const quickFilter = executeFunctions.getNodeParameter('quickFilter', itemIndex) as string;
+			const simpleSearchText = executeFunctions.getNodeParameter('simpleSearchText', itemIndex) as string;
+
+			searchCriteria = this.buildSimpleSearchCriteria(quickFilter, simpleSearchText);
+			searchDisplayText = this.buildSimpleSearchDisplay(quickFilter, simpleSearchText);
+		} else {
+			// Advanced mode
+			const advancedCriteria = executeFunctions.getNodeParameter('advancedCriteria', itemIndex) as any;
+			const result = this.buildAdvancedSearchCriteria(advancedCriteria);
+			searchCriteria = result.criteria;
+			searchDisplayText = result.display;
+		}
+
+		console.log('Search criteria:', JSON.stringify(searchCriteria, null, 2));
+		console.log('Search display:', searchDisplayText);
+
+		let searchResults: number[] = [];
+
 		try {
 			// Use IMAP SEARCH command for server-side filtering
 			searchResults = await client.search(searchCriteria);
@@ -121,6 +126,7 @@ export class SearchEmailsOperation implements IImapOperation {
 						returned: messages.length - 1, // Exclude this summary
 						folder: mailbox,
 						serverSideSearch: true,
+						searchMode: searchMode,
 					},
 				},
 			});
@@ -129,138 +135,208 @@ export class SearchEmailsOperation implements IImapOperation {
 		return messages;
 	}
 
-	private buildAdvancedSearchCriteria(executeFunctions: IExecuteFunctions, itemIndex: number): { criteria: any; displayText: string } {
+	private buildSimpleSearchCriteria(quickFilter: string, searchText: string): any {
+		const criteria: any = {};
+
+		// Apply quick filter
+		switch (quickFilter) {
+			case 'unseen':
+				criteria.unseen = true;
+				break;
+			case 'seen':
+				criteria.seen = true;
+				break;
+			case 'today':
+				criteria.since = new Date(new Date().setHours(0, 0, 0, 0));
+				break;
+			case 'thisWeek':
+				const weekStart = new Date();
+				weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+				weekStart.setHours(0, 0, 0, 0);
+				criteria.since = weekStart;
+				break;
+			case 'all':
+			default:
+				// No additional criteria
+				break;
+		}
+
+		// Apply text search if provided
+		if (searchText && searchText.trim()) {
+			criteria.or = [
+				{ subject: searchText.trim() },
+				{ from: searchText.trim() },
+				{ body: searchText.trim() },
+			];
+		}
+
+		return criteria;
+	}
+
+	private buildSimpleSearchDisplay(quickFilter: string, searchText: string): string {
+		const parts: string[] = [];
+
+		switch (quickFilter) {
+			case 'unseen':
+				parts.push('Unread emails');
+				break;
+			case 'seen':
+				parts.push('Read emails');
+				break;
+			case 'today':
+				parts.push('Today\'s emails');
+				break;
+			case 'thisWeek':
+				parts.push('This week\'s emails');
+				break;
+			case 'all':
+			default:
+				parts.push('All emails');
+				break;
+		}
+
+		if (searchText && searchText.trim()) {
+			parts.push(`containing "${searchText.trim()}"`);
+		}
+
+		return parts.join(' ');
+	}
+
+	private buildAdvancedSearchCriteria(advancedCriteria: any): { criteria: any; display: string } {
 		const criteria: any = {};
 		const displayParts: string[] = [];
 
 		// From filter
-		const fromEmail = executeFunctions.getNodeParameter('fromEmail', itemIndex, '') as string;
-		if (fromEmail.trim()) {
-			criteria.from = fromEmail.trim();
-			displayParts.push(`from:${fromEmail.trim()}`);
+		if (advancedCriteria.from) {
+			criteria.from = advancedCriteria.from;
+			displayParts.push(`from: ${advancedCriteria.from}`);
 		}
 
 		// To filter
-		const toEmail = executeFunctions.getNodeParameter('toEmail', itemIndex, '') as string;
-		if (toEmail.trim()) {
-			criteria.to = toEmail.trim();
-			displayParts.push(`to:${toEmail.trim()}`);
+		if (advancedCriteria.to) {
+			criteria.to = advancedCriteria.to;
+			displayParts.push(`to: ${advancedCriteria.to}`);
 		}
 
 		// Subject filter
-		const subjectFilter = executeFunctions.getNodeParameter('subjectFilter', itemIndex, '') as string;
-		if (subjectFilter.trim()) {
-			criteria.subject = subjectFilter.trim();
-			displayParts.push(`subject:${subjectFilter.trim()}`);
+		if (advancedCriteria.subject) {
+			criteria.subject = advancedCriteria.subject;
+			displayParts.push(`subject: ${advancedCriteria.subject}`);
 		}
 
-		// Body text filter
-		const bodyText = executeFunctions.getNodeParameter('bodyText', itemIndex, '') as string;
-		if (bodyText.trim()) {
-			criteria.body = bodyText.trim();
-			displayParts.push(`body:${bodyText.trim()}`);
+		// Body filter
+		if (advancedCriteria.body) {
+			criteria.body = advancedCriteria.body;
+			displayParts.push(`body: ${advancedCriteria.body}`);
 		}
 
-		// Read status
-		const readStatus = executeFunctions.getNodeParameter('readStatus', itemIndex, 'all') as string;
-		if (readStatus === 'read') {
-			criteria.seen = true;
-			displayParts.push('read');
-		} else if (readStatus === 'unread') {
-			criteria.unseen = true;
-			displayParts.push('unread');
+		// Read status filter
+		if (advancedCriteria.readStatus) {
+			switch (advancedCriteria.readStatus) {
+				case 'unread':
+					criteria.unseen = true;
+					displayParts.push('unread');
+					break;
+				case 'read':
+					criteria.seen = true;
+					displayParts.push('read');
+					break;
+				case 'any':
+				default:
+					// No filter
+					break;
+			}
 		}
 
-		// Flagged status
-		const flaggedStatus = executeFunctions.getNodeParameter('flaggedStatus', itemIndex, 'all') as string;
-		if (flaggedStatus === 'flagged') {
-			criteria.flagged = true;
-			displayParts.push('flagged');
-		} else if (flaggedStatus === 'unflagged') {
-			criteria.unflagged = true;
-			displayParts.push('unflagged');
+		// Date filters
+		this.applyDateFilters(criteria, advancedCriteria, displayParts);
+
+		// Size filters
+		if (advancedCriteria.sizeFilter?.size) {
+			const sizeFilter = advancedCriteria.sizeFilter.size;
+			const sizeBytes = sizeFilter.sizeKB * 1024;
+
+			if (sizeFilter.condition === 'larger') {
+				criteria.larger = sizeBytes;
+				displayParts.push(`larger than ${sizeFilter.sizeKB}KB`);
+			} else {
+				criteria.smaller = sizeBytes;
+				displayParts.push(`smaller than ${sizeFilter.sizeKB}KB`);
+			}
 		}
 
-		// Date range
-		const dateRange = executeFunctions.getNodeParameter('dateRange', itemIndex, 'all') as string;
+		// Attachment filter (Note: IMAP doesn't have direct attachment search,
+		// so we'll use a workaround with content-type)
+		if (advancedCriteria.hasAttachments === 'yes') {
+			criteria.header = ['content-type', 'multipart/mixed'];
+			displayParts.push('with attachments');
+		}
+
+		const display = displayParts.length > 0 ? displayParts.join(', ') : 'all emails';
+
+		return { criteria, display };
+	}
+
+	private applyDateFilters(criteria: any, advancedCriteria: any, displayParts: string[]): void {
+		// Quick date filter takes precedence
+		if (advancedCriteria.quickDate && advancedCriteria.quickDate !== 'none') {
+			const dateRange = this.getQuickDateRange(advancedCriteria.quickDate);
+			if (dateRange.since) {
+				criteria.since = dateRange.since;
+				displayParts.push(`since ${dateRange.since.toLocaleDateString()}`);
+			}
+			if (dateRange.before) {
+				criteria.before = dateRange.before;
+				displayParts.push(`before ${dateRange.before.toLocaleDateString()}`);
+			}
+			return;
+		}
+
+		// Custom date range
+		if (advancedCriteria.dateRange?.range) {
+			const range = advancedCriteria.dateRange.range;
+			if (range.from) {
+				criteria.since = new Date(range.from);
+				displayParts.push(`since ${new Date(range.from).toLocaleDateString()}`);
+			}
+			if (range.to) {
+				criteria.before = new Date(range.to);
+				displayParts.push(`before ${new Date(range.to).toLocaleDateString()}`);
+			}
+		}
+	}
+
+	private getQuickDateRange(quickDate: string): { since?: Date; before?: Date } {
 		const now = new Date();
+		const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-		switch (dateRange) {
-			case 'hour':
-				const hourAgo = new Date(now.getTime() - (60 * 60 * 1000));
-				criteria.since = hourAgo;
-				displayParts.push('since:1h');
-				break;
-			case '6hours':
-				const sixHoursAgo = new Date(now.getTime() - (6 * 60 * 60 * 1000));
-				criteria.since = sixHoursAgo;
-				displayParts.push('since:6h');
-				break;
-			case '12hours':
-				const twelveHoursAgo = new Date(now.getTime() - (12 * 60 * 60 * 1000));
-				criteria.since = twelveHoursAgo;
-				displayParts.push('since:12h');
-				break;
+		switch (quickDate) {
+			case 'lastHour':
+				return { since: new Date(now.getTime() - 60 * 60 * 1000) };
 			case 'today':
-				criteria.since = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-				displayParts.push('since:today');
-				break;
+				return { since: today };
 			case 'yesterday':
-				const yesterday = new Date(now);
+				const yesterday = new Date(today);
 				yesterday.setDate(yesterday.getDate() - 1);
-				criteria.since = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
-				criteria.before = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-				displayParts.push('since:yesterday');
-				break;
-			case '3days':
-				const threeDaysAgo = new Date(now);
-				threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-				criteria.since = threeDaysAgo;
-				displayParts.push('since:3d');
-				break;
-			case 'week':
-				const weekAgo = new Date(now);
-				weekAgo.setDate(weekAgo.getDate() - 7);
-				criteria.since = weekAgo;
-				displayParts.push('since:7d');
-				break;
-			case 'month':
-				const monthAgo = new Date(now);
-				monthAgo.setDate(monthAgo.getDate() - 30);
-				criteria.since = monthAgo;
-				displayParts.push('since:30d');
-				break;
-			case 'custom':
-				const sinceDate = executeFunctions.getNodeParameter('sinceDate', itemIndex, '') as string;
-				const beforeDate = executeFunctions.getNodeParameter('beforeDate', itemIndex, '') as string;
-
-				if (sinceDate) {
-					criteria.since = new Date(sinceDate);
-					displayParts.push(`since:${sinceDate}`);
-				}
-				if (beforeDate) {
-					criteria.before = new Date(beforeDate);
-					displayParts.push(`before:${beforeDate}`);
-				}
-				break;
+				return { since: yesterday, before: today };
+			case 'thisWeek':
+				const weekStart = new Date(today);
+				weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+				return { since: weekStart };
+			case 'lastWeek':
+				const lastWeekEnd = new Date(today);
+				lastWeekEnd.setDate(lastWeekEnd.getDate() - lastWeekEnd.getDay());
+				const lastWeekStart = new Date(lastWeekEnd);
+				lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+				return { since: lastWeekStart, before: lastWeekEnd };
+			case 'thisMonth':
+				return { since: new Date(now.getFullYear(), now.getMonth(), 1) };
+			case 'lastMonth':
+				const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+				const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 1);
+				return { since: lastMonthStart, before: lastMonthEnd };
+			default:
+				return {};
 		}
-
-		// Has attachments (Note: IMAP doesn't have direct attachment search, we approximate with size)
-		const hasAttachments = executeFunctions.getNodeParameter('hasAttachments', itemIndex, 'all') as string;
-		if (hasAttachments === 'yes') {
-			criteria.larger = 50000; // Assume emails > 50KB likely have attachments
-			displayParts.push('larger:50000');
-		}
-
-		// If no criteria specified, search all
-		if (Object.keys(criteria).length === 0) {
-			criteria.all = true;
-			return { criteria, displayText: 'all emails' };
-		}
-
-		return {
-			criteria,
-			displayText: displayParts.length > 0 ? displayParts.join(' AND ') : 'advanced search'
-		};
 	}
 }
