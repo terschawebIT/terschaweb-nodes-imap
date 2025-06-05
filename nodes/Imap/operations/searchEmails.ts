@@ -178,6 +178,21 @@ export class SearchEmailsOperation implements IImapOperation {
 		const now = new Date();
 
 		switch (dateRange) {
+			case 'hour':
+				const hourAgo = new Date(now.getTime() - (60 * 60 * 1000));
+				criteria.since = hourAgo;
+				displayParts.push('since:1h');
+				break;
+			case '6hours':
+				const sixHoursAgo = new Date(now.getTime() - (6 * 60 * 60 * 1000));
+				criteria.since = sixHoursAgo;
+				displayParts.push('since:6h');
+				break;
+			case '12hours':
+				const twelveHoursAgo = new Date(now.getTime() - (12 * 60 * 60 * 1000));
+				criteria.since = twelveHoursAgo;
+				displayParts.push('since:12h');
+				break;
 			case 'today':
 				criteria.since = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 				displayParts.push('since:today');
@@ -188,6 +203,12 @@ export class SearchEmailsOperation implements IImapOperation {
 				criteria.since = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
 				criteria.before = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 				displayParts.push('since:yesterday');
+				break;
+			case '3days':
+				const threeDaysAgo = new Date(now);
+				threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+				criteria.since = threeDaysAgo;
+				displayParts.push('since:3d');
 				break;
 			case 'week':
 				const weekAgo = new Date(now);

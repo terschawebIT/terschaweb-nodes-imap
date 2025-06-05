@@ -363,12 +363,28 @@ export class Imap implements INodeType {
 						value: 'all',
 					},
 					{
+						name: 'Last Hour',
+						value: 'hour',
+					},
+					{
+						name: 'Last 6 Hours',
+						value: '6hours',
+					},
+					{
+						name: 'Last 12 Hours',
+						value: '12hours',
+					},
+					{
 						name: 'Today',
 						value: 'today',
 					},
 					{
 						name: 'Yesterday',
 						value: 'yesterday',
+					},
+					{
+						name: 'Last 3 Days',
+						value: '3days',
 					},
 					{
 						name: 'Last 7 Days',
@@ -379,7 +395,7 @@ export class Imap implements INodeType {
 						value: 'month',
 					},
 					{
-						name: 'Custom Date',
+						name: 'Custom Date & Time',
 						value: 'custom',
 					},
 				],

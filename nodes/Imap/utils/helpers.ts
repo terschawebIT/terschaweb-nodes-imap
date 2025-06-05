@@ -129,6 +129,27 @@ export class SearchQueryParser {
 			return date;
 		}
 
+		// Handle hours
+		if (cleanDateStr.endsWith('h') || cleanDateStr.endsWith('hours')) {
+			const hours = Number.parseInt(cleanDateStr);
+			if (!isNaN(hours)) {
+				const date = new Date();
+				date.setTime(date.getTime() - (hours * 60 * 60 * 1000));
+				return date;
+			}
+		}
+
+		// Handle minutes
+		if (cleanDateStr.endsWith('m') || cleanDateStr.endsWith('min') || cleanDateStr.endsWith('minutes')) {
+			const minutes = Number.parseInt(cleanDateStr);
+			if (!isNaN(minutes)) {
+				const date = new Date();
+				date.setTime(date.getTime() - (minutes * 60 * 1000));
+				return date;
+			}
+		}
+
+		// Handle days
 		if (cleanDateStr.endsWith('d') || cleanDateStr.endsWith('days')) {
 			const days = Number.parseInt(cleanDateStr);
 			if (!isNaN(days)) {
