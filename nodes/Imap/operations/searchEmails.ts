@@ -75,37 +75,77 @@ export class SearchEmailsOperation implements IImapOperation {
 
 		const messages: INodeExecutionData[] = [];
 
-		// Use range-based UID FETCH for each UID (matches working v2.1.2 approach)
+				// Use sequence-based FETCH like listEmails (most reliable approach)
 		if (limitedResults.length > 0) {
 			try {
-				console.log(`Fetching metadata for ${limitedResults.length} UIDs using range syntax`);
+				console.log(`Converting ${limitedResults.length} UIDs to sequence numbers for reliable FETCH`);
 
-				// Process each UID individually using range syntax (uid:uid)
+				// Get mailbox status to know current message count
+				const folderStatus = await client.status(mailbox, { messages: true });
+				const totalMessages = folderStatus.messages || 0;
+
+				if (totalMessages === 0) {
+					console.log('No messages in mailbox');
+					return [{
+						json: {
+							message: `No emails found in folder: ${mailbox}`,
+							totalMessages: 0,
+							folder: mailbox,
+						},
+					}];
+				}
+
+				// Fetch all current messages to map UIDs to sequence numbers
+				console.log(`Mapping UIDs to sequence numbers for ${totalMessages} total messages`);
+				const uidToSeqMap = new Map<number, number>();
+
+				// Use a small range fetch to get UID mapping efficiently
+				const mappingGenerator = client.fetch(`1:${totalMessages}`, {
+					uid: true,
+				});
+
+				for await (const msg of mappingGenerator) {
+					if (msg.uid && msg.seq) {
+						uidToSeqMap.set(msg.uid, msg.seq);
+					}
+				}
+
+				console.log(`Built UID-to-sequence mapping for ${uidToSeqMap.size} messages`);
+
+				// Process each UID by converting to sequence number
 				for (const uid of limitedResults) {
-					console.log(`Fetching email metadata for UID: ${uid} using range ${uid}:${uid}`);
+					const sequenceNumber = uidToSeqMap.get(uid);
 
-					// Use range-based UID FETCH syntax that worked in v2.1.2
-					const messageGenerator = client.fetch(`${uid}:${uid}`, {
+					if (!sequenceNumber) {
+						console.warn(`UID ${uid} not found in current mailbox (may have been deleted/moved)`);
+						continue;
+					}
+
+					console.log(`Fetching email for UID ${uid} using sequence number ${sequenceNumber}`);
+
+					// Use sequence-based FETCH (like listEmails - most reliable)
+					const messageGenerator = client.fetch(sequenceNumber.toString(), {
 						envelope: true,
 						flags: true,
 						size: true,
 						uid: true,
-					}, { uid: true });
+					});
 
 					let message: any = null;
 					for await (const msg of messageGenerator) {
-						console.log(`Range fetch message received for UID ${uid}:`, {
+						console.log(`Sequence fetch message received for UID ${uid} (seq ${sequenceNumber}):`, {
 							hasEnvelope: !!msg.envelope,
 							hasFlags: !!msg.flags,
 							hasSize: !!msg.size,
-							uid: msg.uid
+							uid: msg.uid,
+							seq: msg.seq
 						});
 						message = msg;
-						break; // Only get first message from range
+						break; // Only get first message
 					}
 
 					if (message && message.envelope) {
-						console.log(`Processing email UID ${uid}:`, {
+						console.log(`Processing email UID ${uid} (seq ${sequenceNumber}):`, {
 							subject: message.envelope.subject,
 							from: message.envelope.from?.[0]?.address || 'unknown'
 						});
@@ -113,6 +153,7 @@ export class SearchEmailsOperation implements IImapOperation {
 						messages.push({
 							json: {
 								uid: message.uid,
+								sequence: message.seq,
 								subject: message.envelope?.subject || '',
 								from: message.envelope?.from?.[0] || {},
 								to: message.envelope?.to || [],
@@ -126,7 +167,7 @@ export class SearchEmailsOperation implements IImapOperation {
 							},
 						});
 					} else {
-						console.warn(`No valid message data for UID ${uid}:`, {
+						console.warn(`No valid message data for UID ${uid} (seq ${sequenceNumber}):`, {
 							hasMessage: !!message,
 							hasEnvelope: message?.envelope ? true : false,
 							messageKeys: message ? Object.keys(message) : 'none'
@@ -134,9 +175,9 @@ export class SearchEmailsOperation implements IImapOperation {
 					}
 				}
 
-				console.log(`Range fetch completed. Expected ${limitedResults.length} messages, returned ${messages.length} messages`);
+				console.log(`Sequence-based fetch completed. Expected ${limitedResults.length} messages, returned ${messages.length} messages`);
 			} catch (error) {
-				console.error(`Range fetch failed:`, {
+				console.error(`Sequence-based fetch failed:`, {
 					error: (error as Error).message,
 					stack: (error as Error).stack,
 					uidCount: limitedResults.length
