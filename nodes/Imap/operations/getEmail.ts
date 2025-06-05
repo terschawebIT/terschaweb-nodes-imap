@@ -26,12 +26,13 @@ export class GetEmailOperation implements IImapOperation {
 			});
 		}
 
-		                let message: any;
-                try {
-                        message = await client.fetchOne(emailUid, {
+				let message: any;
+		try {
+			message = await client.fetchOne(emailUid, {
 				source: true,
 				envelope: true,
 				flags: true,
+				uid: true,
 			});
 		} catch (error) {
 			throw new NodeApiError(executeFunctions.getNode(), {

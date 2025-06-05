@@ -77,6 +77,7 @@ export class SearchEmailsOperation implements IImapOperation {
 					envelope: true,
 					flags: true,
 					size: true,
+					uid: true,
 				});
 
 				if (message) {

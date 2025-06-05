@@ -29,9 +29,12 @@ export class DownloadAttachmentOperation implements IImapOperation {
 			});
 		}
 
-		                let message: any;
-                try {
-                        message = await client.fetchOne(emailUid, { source: true });
+				let message: any;
+		try {
+			message = await client.fetchOne(emailUid, {
+				source: true,
+				uid: true,
+			});
 		} catch (error) {
 			throw new NodeApiError(executeFunctions.getNode(), {
 				message: `Failed to fetch email with UID ${emailUid}: ${(error as Error).message}`,
