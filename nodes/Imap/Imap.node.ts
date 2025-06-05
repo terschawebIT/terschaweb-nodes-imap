@@ -102,10 +102,23 @@ export class Imap implements INodeType {
 			// Always close the connection
 			console.log('Starting client cleanup...');
 			try {
-				await client.logout();
+				// Add timeout to logout to prevent hanging
+				const logoutPromise = client.logout();
+				const timeoutPromise = new Promise<void>((_, reject) => {
+					setTimeout(() => reject(new Error('Logout timeout')), 5000);
+				});
+
+				await Promise.race([logoutPromise, timeoutPromise]);
 				console.log('Client logout completed');
 			} catch (error) {
-				console.log('Client logout error (ignored):', (error as Error).message);
+				console.log('Client logout error/timeout (forcing close):', (error as Error).message);
+				try {
+					// Force close if logout fails/hangs
+					await client.close();
+					console.log('Client force closed');
+				} catch (closeError) {
+					console.log('Client force close error (ignored):', (closeError as Error).message);
+				}
 			}
 			console.log('Finally block completed');
 		}
