@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-imap-ai",
-  	"version": "2.2.0",
+  	"version": "2.2.1",
   "description": "Simplified IMAP node for n8n with AI-agent support. Clean and modular email and mailbox management for automation workflows.",
   "keywords": [
     "n8n-community-node-package",
