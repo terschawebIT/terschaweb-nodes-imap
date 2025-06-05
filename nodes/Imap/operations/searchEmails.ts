@@ -83,20 +83,78 @@ export class SearchEmailsOperation implements IImapOperation {
 
 		console.log(`Returning ${limitedResults.length} UIDs (limited from ${searchResults.length} found)`);
 
-		// Return UIDs directly - no client-side validation needed
-		// The SEARCH command already returns valid UIDs from the current mailbox state
+		// Get the actual UIDs of the found emails by fetching them
+		// This ensures we have the correct UIDs, not sequence numbers or stale data
+		let actualUIDs: number[] = [];
+
+		try {
+			console.log(`Fetching actual UIDs for ${limitedResults.length} found emails...`);
+
+			// Use FETCH to get the actual UIDs of the found messages
+			for (const result of limitedResults) {
+				try {
+					// Fetch by sequence number or UID to get the actual UID
+					const messageGenerator = client.fetch(result.toString(), {
+						uid: true,
+					}, { uid: true });
+
+					for await (const msg of messageGenerator) {
+						if (msg.uid) {
+							actualUIDs.push(msg.uid);
+							console.log(`Found actual UID: ${msg.uid} for search result: ${result}`);
+						}
+						break; // Only need the first message
+					}
+				} catch (error) {
+					console.warn(`Failed to get UID for search result ${result}:`, error);
+					continue;
+				}
+			}
+
+			console.log(`Got ${actualUIDs.length} actual UIDs from ${limitedResults.length} search results`);
+
+			// Sort UIDs by newest first
+			actualUIDs.sort((a, b) => b - a);
+
+		} catch (error) {
+			console.error('Failed to fetch actual UIDs:', error);
+			throw new NodeApiError(executeFunctions.getNode(), {
+				message: `Failed to get email UIDs: ${(error as Error).message}`,
+			});
+		}
+
+		// If no valid UIDs found, return empty result
+		if (actualUIDs.length === 0) {
+			return [
+				{
+					json: {
+						searchSummary: {
+							totalFound: searchResults.length,
+							returned: 0,
+							query: searchDisplayText,
+							criteria: searchCriteria,
+							folder: mailbox,
+							note: "No valid emails found matching criteria",
+						},
+						uids: [],
+						firstUID: null,
+					},
+				},
+			];
+		}
+
 		const result = {
 			json: {
 				searchSummary: {
 					totalFound: searchResults.length,
-					returned: limitedResults.length,
+					returned: actualUIDs.length,
 					query: searchDisplayText,
 					criteria: searchCriteria,
 					folder: mailbox,
 				},
-				uids: limitedResults, // Array of UIDs for getEmail operation
+				uids: actualUIDs, // Actual UIDs from FETCH operation
 				// Convenience: return first UID separately
-				firstUID: limitedResults.length > 0 ? limitedResults[0] : null,
+				firstUID: actualUIDs.length > 0 ? actualUIDs[0] : null,
 			},
 		};
 
