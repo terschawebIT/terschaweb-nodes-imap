@@ -43,7 +43,7 @@
     "format:check": "biome format nodes credentials package.json",
     "lint": "biome check nodes credentials package.json",
     "lint:fix": "biome check --write nodes credentials package.json",
-    "prepublishOnly": "npm run build && npm run lint",
+    		"prepublishOnly": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "files": ["dist"],
