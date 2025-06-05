@@ -31,16 +31,28 @@ export class DownloadAttachmentOperation implements IImapOperation {
 
 						let message: any;
 		try {
-			// Use direct UID-based fetch for better compatibility
-			const messageGenerator = client.fetch(`${emailUid}:${emailUid}`, {
+			// First verify the UID exists
+			const searchResults = await client.search({ uid: emailUid.toString() });
+			if (searchResults.length === 0) {
+				throw new NodeApiError(executeFunctions.getNode(), {
+					message: `Email with UID ${emailUid} not found in ${mailbox}`,
+				});
+			}
+
+			// Use basic UID FETCH without range syntax
+			const messageGenerator = client.fetch(emailUid.toString(), {
 				source: true,
 				uid: true,
-			});
+			}, { uid: true });
 
 			// Get the first (and only) message from the generator
 			for await (const msg of messageGenerator) {
 				message = msg;
 				break;
+			}
+
+			if (!message) {
+				throw new Error(`No message data received for UID ${emailUid}`);
 			}
 		} catch (error) {
 			throw new NodeApiError(executeFunctions.getNode(), {

@@ -26,35 +26,32 @@ export class GetEmailOperation implements IImapOperation {
 			});
 		}
 
-										let message: any;
+												let message: any;
 		try {
-			// Try the download method first (most reliable for complete emails)
-			try {
-				const downloadResult = await client.download(emailUid, 'FULL', { uid: true });
-				message = {
-					uid: emailUid,
-					source: downloadResult.content,
-					flags: new Set(), // We'll get flags separately if needed
-					size: downloadResult.meta?.expectedSize || 0
-				};
-			} catch (downloadError) {
-				// Fallback to range-based fetch if download fails
-				const messageGenerator = client.fetch(`${emailUid}:${emailUid}`, {
-					source: true,
-					uid: true,
-					flags: true,
-					size: true
+			// First, search for the specific UID to verify it exists
+			const searchResults = await client.search({ uid: emailUid.toString() });
+			if (searchResults.length === 0) {
+				throw new NodeApiError(executeFunctions.getNode(), {
+					message: `Email with UID ${emailUid} not found in ${mailbox}`,
 				});
+			}
 
-				// Get the first (and only) message from the generator
-				for await (const msg of messageGenerator) {
-					message = msg;
-					break;
-				}
+			// Use the most basic UID FETCH with minimal parameters
+			const messageGenerator = client.fetch(emailUid.toString(), {
+				source: true,
+				uid: true,
+				flags: true,
+				size: true
+			}, { uid: true });
 
-				if (!message) {
-					throw downloadError; // Re-throw original error if fallback also fails
-				}
+			// Get the first (and only) message from the generator
+			for await (const msg of messageGenerator) {
+				message = msg;
+				break;
+			}
+
+			if (!message) {
+				throw new Error(`No message data received for UID ${emailUid}`);
 			}
 		} catch (error) {
 			throw new NodeApiError(executeFunctions.getNode(), {
