@@ -1,0 +1,31 @@
+{
+  "typescript.preferences.includePackageJsonAutoImports": "off",
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": true,
+    "source.organizeImports": true
+  },
+  "files.exclude": {
+    "**/dist": true,
+    "**/node_modules": true,
+    "**/.git": true
+  },
+  "typescript.format.enable": true,
+  "javascript.format.enable": true,
+  "eslint.enable": false,
+  "biome.enabled": true,
+  "editor.defaultFormatter": "biomejs.biome",
+  "git.defaultCloneDirectory": "./",
+  "git.autofetch": true,
+  "git.confirmSync": false,
+  "terminal.integrated.defaultProfile.osx": "zsh",
+  "workbench.editor.enablePreview": false,
+  "explorer.confirmDelete": false,
+  "explorer.confirmDragAndDrop": false,
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "search.exclude": {
+    "**/dist": true,
+    "**/node_modules": true
+  }
+}

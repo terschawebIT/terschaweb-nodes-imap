@@ -1,0 +1,56 @@
+# Project Rules for n8n IMAP Node
+
+## Language & Communication
+- All commit messages must be in English
+- All code comments must be in English
+- README and documentation must be in English
+- Responses should be factual, concise, and without emojis
+- Avoid marketing language - be technical and precise
+
+## Code Standards
+- Use TypeScript strict mode
+- Follow existing modular architecture with operations registry pattern
+- Implement IImapOperation interface for new operations
+- Use NodeApiError for consistent n8n error handling
+- Validate all parameters before IMAP operations
+
+## File Structure
+- Operations in `nodes/Imap/operations/`
+- Shared utilities in `nodes/Imap/utils/`
+- UI properties in `ImapNodeProperties.ts`
+- Register new operations in `operationRegistry.ts`
+
+## Development Workflow
+- Use `npm run release` for combined build/commit/push/publish
+- Version format: semantic versioning (major.minor.patch)
+- Build must pass before commits
+- Test locally before releasing
+
+## Commit Message Format
+```
+Type: Brief description
+
+- Detailed change 1
+- Detailed change 2
+- Version bump if applicable
+```
+
+Types: Fix, Feature, Refactor, Docs, Build, Test
+
+## Performance Requirements
+- Use server-side IMAP SEARCH instead of client-side filtering
+- Implement connection timeouts and cleanup
+- Limit result sets to prevent memory issues
+- Optimize fetch operations for metadata only when possible
+
+## Error Handling
+- Use NodeApiError with descriptive messages
+- Include context in error messages
+- Validate parameters before IMAP operations
+- Implement graceful degradation for partial failures
+
+## AI Agent Optimization
+- All parameters must be controllable by AI agents
+- Operations should be atomic and clearly defined
+- Provide comprehensive parameter validation
+- Return structured data suitable for automation
