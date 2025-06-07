@@ -1,6 +1,6 @@
 # n8n IMAP Node
 
-Eine n8n Community Node für IMAP Email-Operationen mit erweiterten Such- und Verwaltungsfunktionen.
+An n8n community node for IMAP email operations with advanced search and management functions.
 
 ## Installation
 
@@ -8,158 +8,137 @@ Eine n8n Community Node für IMAP Email-Operationen mit erweiterten Such- und Ve
 npm install n8n-nodes-imap-ai
 ```
 
-Alternativ über die n8n Community Nodes GUI: `n8n-nodes-imap-ai`
+Alternatively via n8n Community Nodes GUI: `n8n-nodes-imap-ai`
 
-## Funktionen
+## Features
 
-### Email-Operationen
+### Email Operations
 
 **List Emails**
-- Listet Emails in einem Mailbox-Ordner auf
-- Konfigurierbare Anzahl (Limit)
-- Sortierung nach UID (neueste zuerst)
+- Lists emails in a mailbox folder
+- Configurable limit
+- Sorted by UID (newest first)
 
 **Get Email**
-- Ruft eine einzelne Email mit vollständigem Inhalt ab
-- Unterstützt Text- und HTML-Inhalte
-- Parst Email-Headers und Metadaten
+- Retrieves a single email with full content
+- Supports text and HTML content
+- Parses email headers and metadata
 
 **Search Emails**
-- Zwei Modi: Simple Search und Advanced Search
-- Server-seitige IMAP SEARCH für Performance
-- Kombinierbare Suchkriterien im Advanced Mode
+- Two modes: Simple Search and Advanced Search
+- Server-side IMAP SEARCH for performance
+- Combinable search criteria in Advanced mode
 
 **Move Email**
-- Verschiebt Emails zwischen Mailbox-Ordnern
-- Verwendet IMAP MOVE Kommando
+- Moves emails between mailbox folders
+- Uses IMAP MOVE command
 
 **Mark Email**
-- Markiert Emails als gelesen oder ungelesen
-- Ändert IMAP Flags entsprechend
+- Marks emails as read or unread
+- Changes IMAP flags accordingly
 
 **Delete Email**
-- Markiert Emails zur Löschung
-- Verwendet IMAP STORE mit \Deleted Flag
+- Marks emails for deletion
+- Uses IMAP STORE with \Deleted flag
 
 **Download Attachment**
-- Lädt Email-Anhänge herunter
-- Unterstützt verschiedene Attachment-Typen
+- Downloads email attachments
+- Supports various attachment types
 
-### Mailbox-Operationen
+### Mailbox Operations
 
 **List Mailboxes**
-- Listet alle verfügbaren IMAP-Ordner auf
-- Unterstützt hierarchische Ordnerstrukturen
+- Lists all available IMAP folders
+- Supports hierarchical folder structures
 
 **Create Mailbox**
-- Erstellt neue IMAP-Ordner
-- Validiert Ordnernamen
+- Creates new IMAP folders
+- Validates folder names
 
-### Draft-Operationen
+### Draft Operations
 
 **Create Draft**
-- Erstellt Email-Entwürfe
-- Unterstützt Text- und HTML-Format
-- Konfigurierbare Empfänger, Betreff und Inhalt
+- Creates email drafts
+- Supports text and HTML format
+- Configurable recipients, subject and content
 
-## Email-Suche
+## Email Search
 
 ### Simple Search Mode
 
-Bietet vordefinierte Filter:
+Provides predefined filters:
 - All Emails
 - Unread Emails  
 - Read Emails
 - Today's Emails
 - This Week's Emails
 
-Optional mit Textsuche die gleichzeitig Subject, From und Body durchsucht.
+Optional with text search that simultaneously searches Subject, From and Body.
 
 ### Advanced Search Mode
 
-Kombinierbare Kriterien:
+Combinable criteria:
 
-**Content-Filter:**
-- From (Sender): Email-Adresse oder Name
-- To (Empfänger): Ziel-Email-Adresse
-- Subject Contains: Text im Betreff
-- Body Contains: Text im Email-Inhalt
+**Content Filters:**
+- From (Sender): Email address or name
+- To (Recipient): Target email address
+- Subject Contains: Text in subject
+- Body Contains: Text in email content
 
-**Status-Filter:**
+**Status Filters:**
 - Read Status: Any/Unread Only/Read Only
-- Has Attachments: Any/With Attachments/Without Attachments
+- Flagged: Include flagged emails
+- Has Attachments: Filter by attachment presence
 
-**Date-Filter:**
-- Quick Date Presets: Last Hour, Today, Yesterday, This Week, Last Week, This Month, Last Month
-- Custom Date Range: Von/Bis Datum
+**Date Filters:**
+- Quick Date: Today/Yesterday/This Week/Last Week/This Month/Last Month
+- Custom Date Range: From/To dates
+- Date combinations for precise time windows
 
-**Size-Filter:**
-- Email Size: Larger than/Smaller than X KB
+**Size Filters:**
+- Size threshold with larger/smaller options
+- Configurable in KB for bandwidth management
 
-## Konfiguration
+## Configuration
 
-### IMAP-Verbindung
+### IMAP Credentials
 
-Erforderliche Credential-Parameter:
-- Host (z.B. `imap.gmail.com`)
-- Port (z.B. `993`)
-- Username/Email-Adresse
-- Password/App-Password
-- Secure (SSL/TLS aktiviert)
+Required fields:
+- **Host**: IMAP server address
+- **Port**: Server port (usually 993 for SSL)
+- **User**: Email address
+- **Password**: Email password or app password
+- **Secure**: Enable SSL/TLS (recommended)
 
-### Parameter-Validierung
+### Common IMAP Settings
 
-Die Node validiert alle Eingabeparameter:
-- Mailbox-Namen werden auf Gültigkeit geprüft
-- Email-UIDs müssen numerisch sein
-- Limits werden auf 1-1000 begrenzt
-- Verbindungsparameter werden vor Ausführung validiert
+**Gmail:**
+- Host: imap.gmail.com
+- Port: 993
+- Secure: Yes
+- Note: Requires App Password with 2FA enabled
 
-## Technische Details
+**Outlook/Hotmail:**
+- Host: outlook.office365.com
+- Port: 993
+- Secure: Yes
 
-### Architektur
+## Usage Examples
 
-**Modular aufgebaut:**
-- Hauptnode-Klasse (`Imap.node.ts`)
-- Separate Operation-Klassen (`operations/`)
-- Geteilte Utilities (`utils/`)
-- Zentrale Property-Definitionen (`ImapNodeProperties.ts`)
-
-**Operations Registry Pattern:**
-- Jede Operation implementiert `IImapOperation` Interface
-- Dynamische Registrierung neuer Operationen möglich
-- Saubere Trennung der Geschäftslogik
-
-### Performance-Optimierungen
-
-**Connection Management:**
-- Promise.race() Timeouts für robuste Verbindungsabwicklung
-- Automatische Connection-Cleanup
-- Fehlerbehandlung mit Fallback-Mechanismen
-
-**Search Performance:**
-- Server-seitige IMAP SEARCH statt Client-seitiges Filtern
-- Optimierte Fetch-Operationen für Metadaten
-- Begrenzte Ergebnismengen zur Performance-Schonung
-
-### Error Handling
-
-**Robuste Fehlerbehandlung:**
-- NodeApiError für konsistente n8n-Integration
-- Detaillierte Fehlermeldungen mit Kontext
-- Graceful Degradation bei Teilausfällen
-
-**Validation:**
-- Parameter-Validierung vor IMAP-Operationen
-- Mailbox-Existenz-Prüfung
-- Email-UID Validierung
-
-## Verwendungsbeispiele
-
-### Einfache Email-Suche
+### Basic Email Listing
 
 ```javascript
-// Simple Mode: Heute's Emails mit Text-Filter
+{
+  "operation": "listEmails",
+  "mailbox": "INBOX",
+  "limit": 20
+}
+```
+
+### Simple Email Search
+
+```javascript
+// Simple Mode: Quick filter with text search
 {
   "operation": "searchEmails",
   "searchMode": "simple", 
@@ -168,10 +147,10 @@ Die Node validiert alle Eingabeparameter:
 }
 ```
 
-### Erweiterte Email-Suche
+### Advanced Email Search
 
 ```javascript
-// Advanced Mode: Mehrere Kriterien kombiniert
+// Advanced Mode: Multiple combined criteria
 {
   "operation": "searchEmails",
   "searchMode": "advanced",
@@ -185,17 +164,17 @@ Die Node validiert alle Eingabeparameter:
 }
 ```
 
-### Email-Management
+### Email Management
 
 ```javascript
-// Email abrufen
+// Get email
 {
   "operation": "getEmail",
   "mailbox": "INBOX",
   "emailUid": "12345"
 }
 
-// Email verschieben  
+// Move email  
 {
   "operation": "moveEmail",
   "mailbox": "INBOX",
@@ -204,32 +183,32 @@ Die Node validiert alle Eingabeparameter:
 }
 ```
 
-## Kompatibilität
+## Compatibility
 
-**Getestete IMAP-Server:**
+**Tested IMAP Servers:**
 - Gmail (imap.gmail.com)
 - Outlook/Exchange
-- Standard IMAP-konforme Server
+- Standard IMAP-compliant servers
 
-**Voraussetzungen:**
+**Requirements:**
 - n8n Version >= 0.190.0
 - Node.js >= 16
-- IMAP-Server mit SSL/TLS Unterstützung
+- IMAP server with SSL/TLS support
 
-## Bekannte Limitationen
+## Known Limitations
 
-- OAuth2-Authentifizierung noch nicht implementiert
-- Attachment-Suche nutzt Content-Type Workaround (IMAP-Standard-Limitation)
-- Große Email-Attachments können Memory-intensiv sein
+- OAuth2 authentication not yet implemented
+- Attachment search uses Content-Type workaround (IMAP standard limitation)
+- Large email attachments can be memory-intensive
 
-## Entwicklung
+## Development
 
-### Neue Operationen hinzufügen
+### Adding New Operations
 
-1. Operation-Klasse in `operations/` erstellen
-2. `IImapOperation` Interface implementieren  
-3. In `operationRegistry.ts` registrieren
-4. UI-Parameter in `ImapNodeProperties.ts` definieren
+1. Create operation class in `operations/`
+2. Implement `IImapOperation` interface  
+3. Register in `operationRegistry.ts`
+4. Define UI parameters in `ImapNodeProperties.ts`
 
 ### Build & Test
 
@@ -240,26 +219,30 @@ npm test
 
 ## Changelog
 
+**v2.3.9**
+- Fixed missing draftFolder parameter for Create Draft operation
+- Added resourceLocator for draft folder selection
+
 **v2.3.0**
-- Neue Multi-Criteria Search UI
-- Simple vs Advanced Search Modi
-- Erweiterte Date/Size/Attachment Filter
+- New Multi-Criteria Search UI
+- Simple vs Advanced Search modes
+- Extended Date/Size/Attachment filters
 
 **v2.2.4** 
-- Promise.race() Timeout Fix für IMAP logout
-- Verbesserte Connection-Stabilität
+- Promise.race() timeout fix for IMAP logout
+- Improved connection stability
 
 **v2.2.0**
-- Modulare Architektur-Refactoring
-- Operations Registry Pattern
-- Verbesserte Error Handling
+- Modular architecture refactoring
+- Operations Registry pattern
+- Improved error handling
 
 ## Support
 
 - GitHub Issues: [Repository Issues](https://github.com/terschawebIT/terschaweb-nodes-imap/issues)
 - Email: support@terschaweb.de
 
-## Lizenz
+## License
 
 MIT License
 

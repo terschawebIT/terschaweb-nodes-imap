@@ -513,6 +513,36 @@ export const ImapNodeProperties: INodeProperties[] = [
 	},
 	// Draft creation fields
 	{
+		displayName: 'Draft Folder',
+		name: 'draftFolder',
+		type: 'resourceLocator',
+		default: { mode: 'name', value: 'Drafts' },
+		description: 'The folder to save the draft in',
+		modes: [
+			{
+				displayName: 'From List',
+				name: 'list',
+				type: 'list',
+				placeholder: 'Select a folder...',
+				typeOptions: {
+					searchListMethod: 'getMailboxes',
+					searchable: true,
+				},
+			},
+			{
+				displayName: 'Name',
+				name: 'name',
+				type: 'string',
+				placeholder: 'e.g. Drafts',
+			},
+		],
+		displayOptions: {
+			show: {
+				operation: ['createDraft'],
+			},
+		},
+	},
+	{
 		displayName: 'To',
 		name: 'to',
 		type: 'string',
